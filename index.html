@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>My Way Summer Planner</title>
+    <link rel="stylesheet" href="styles.css">
+  </head>
+  <body>
+    <main class="shell">
+      <section class="mast">
+        <img src="assets/marina-header.png" alt="" class="mast__image">
+        <div class="mast__content">
+          <p class="eyebrow">My Way</p>
+          <h1>Summer Planner</h1>
+          <div class="mast__stats" aria-label="Planning summary">
+            <span><strong id="trackedPeople">0</strong> people</span>
+            <span><strong id="trackedDates">0</strong> blocked date ranges</span>
+            <span><strong id="bestScore">0</strong> best availability</span>
+          </div>
+        </div>
+      </section>
+
+      <section class="workspace">
+        <aside class="controls" aria-label="Planner settings">
+          <div class="field-row">
+            <label for="startDate">Start</label>
+            <input id="startDate" type="date" value="2026-05-25">
+          </div>
+          <div class="field-row">
+            <label for="endDate">End</label>
+            <input id="endDate" type="date" value="2026-10-31">
+          </div>
+          <div class="field-row">
+            <label for="eventLength">Length</label>
+            <select id="eventLength">
+              <option value="1">1 day</option>
+              <option value="2">2 days</option>
+              <option value="3">3 days</option>
+              <option value="4">4 days</option>
+            </select>
+          </div>
+          <label class="toggle">
+            <input id="weekendsOnly" type="checkbox" checked>
+            <span>Weekends only</span>
+          </label>
+          <div class="people" id="peopleFilters" aria-label="People"></div>
+        </aside>
+
+        <section class="results" aria-live="polite">
+          <div class="section-head">
+            <div>
+              <p class="eyebrow">Best Picks</p>
+              <h2>Lowest-conflict event dates</h2>
+            </div>
+            <div class="legend" aria-label="Calendar legend">
+              <span><i class="good"></i>clear</span>
+              <span><i class="warn"></i>someone OOT</span>
+              <span><i class="captain"></i>captain OOT</span>
+              <span><i class="bad"></i>both captains OOT</span>
+            </div>
+          </div>
+          <div class="best-list" id="bestList"></div>
+          <div class="calendar" id="calendar"></div>
+        </section>
+      </section>
+
+      <section class="source">
+        <div class="section-head">
+          <div>
+            <p class="eyebrow">Organized Source</p>
+            <h2>Out-of-town dates</h2>
+          </div>
+        </div>
+        <div class="source-grid" id="sourceGrid"></div>
+      </section>
+    </main>
+
+    <script src="app.js"></script>
+  </body>
+</html>
