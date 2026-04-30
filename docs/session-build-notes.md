@@ -102,6 +102,19 @@ The calendar severity logic was changed to treat Joe and Sean as captains:
 
 This logic is in `levelFor(conflicts)`.
 
+## Slot-Based Availability
+
+The planner was updated to evaluate two slots for each candidate day:
+
+- Morning: `9am-4pm`
+- Evening: `5pm-8am`
+
+The Best Picks section now ranks event slots instead of whole-day event starts. Each candidate date is expanded into morning and evening slots, scored independently, then sorted by best availability, fewest conflicts, earliest date, and morning before evening.
+
+Evening slots cross midnight, so a slot beginning at `5pm` is checked through `8am` on the following day. OOT date ranges remain inclusive in the source data, but overlap logic treats them as full-day intervals so partial-day slot checks work correctly.
+
+The calendar now shows compact `AM` and `PM` markers for each day. The day background uses the highest severity of its two slots, while each marker is color-coded by that slot's own severity. Hover text shows the detailed morning and evening availability.
+
 ## Sorting
 
 People are now sorted as:
@@ -147,4 +160,3 @@ node --check app.js
 ```
 
 The in-app browser was reloaded after UI changes to confirm the page rendered and browser console errors were absent.
-

@@ -296,6 +296,14 @@ select {
   font-weight: 850;
 }
 
+.pick__slot {
+  display: block;
+  margin-bottom: 4px;
+  color: #2b6267;
+  font-size: .8rem;
+  font-weight: 850;
+}
+
 .pick__score {
   display: inline-block;
   margin-bottom: 12px;
@@ -342,7 +350,7 @@ select {
 
 .dow,
 .day {
-  min-height: 38px;
+  min-height: 64px;
   border-radius: 6px;
   font-size: .78rem;
 }
@@ -357,6 +365,7 @@ select {
 .day {
   display: grid;
   align-content: space-between;
+  gap: 5px;
   padding: 6px;
   color: #173225;
   border: 1px solid #cfe1d3;
@@ -390,11 +399,43 @@ select {
   color: inherit;
 }
 
-.day span {
+.slot-list {
+  display: flex;
+  justify-content: center;
+  gap: 4px;
+  min-width: 0;
+}
+
+.slot-pill {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  min-height: 15px;
+  border: 1px solid rgba(23, 32, 38, .14);
+  border-radius: 4px;
+  padding: 2px;
+  color: #173225;
+  background: rgba(255, 255, 255, .72);
   font-size: .68rem;
   font-weight: 750;
-  color: inherit;
-  opacity: .86;
+  line-height: 1;
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+.slot-pill[data-level="1"] {
+  color: #4f3500;
+  background: #f7d985;
+}
+
+.slot-pill[data-level="2"] {
+  color: #fff;
+  background: #d96c20;
+}
+
+.slot-pill[data-level="3"] {
+  color: #fff;
+  background: #b6463b;
 }
 
 .source {
@@ -521,7 +562,11 @@ button:hover {
   }
 
   .day {
-    min-height: 34px;
+    min-height: 58px;
     padding: 4px;
+  }
+
+  .slot-pill {
+    font-size: .58rem;
   }
 }

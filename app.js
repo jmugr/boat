@@ -24,6 +24,7 @@ const planner = {
         range("2026-06-18", "2026-06-21", "6/18-6/21"),
         range("2026-07-03", "2026-07-05", "4th of July weekend"),
         range("2026-07-17", "2026-07-20", "7/17-7/20"),
+        range("2026-07-23", "2026-07-26", "7/23-7/26"),
         range("2026-08-20", "2026-08-23", "8/20-8/23")
       ]
     },
@@ -87,6 +88,26 @@ const monthNames = new Intl.DateTimeFormat("en-US", { month: "long", year: "nume
 const compactDate = new Intl.DateTimeFormat("en-US", { month: "short", day: "numeric" });
 const weekday = new Intl.DateTimeFormat("en-US", { weekday: "short" });
 const dayNames = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+const slots = [
+  {
+    id: "morning",
+    name: "Morning",
+    shortName: "AM",
+    timeLabel: "9am-4pm",
+    startHour: 9,
+    endHour: 16,
+    endOffsetDays: 0
+  },
+  {
+    id: "evening",
+    name: "Evening",
+    shortName: "PM",
+    timeLabel: "5pm-8am",
+    startHour: 17,
+    endHour: 8,
+    endOffsetDays: 1
+  }
+];
 
 function range(start, end) {
   return { start, end };
@@ -110,6 +131,10 @@ function addDays(date, count) {
   return next;
 }
 
+function dateAtHour(date, hour) {
+  return new Date(date.getFullYear(), date.getMonth(), date.getDate(), hour);
+}
+
 function eachDay(start, end) {
   const days = [];
   for (let day = parseDate(start); day <= parseDate(end); day = addDays(day, 1)) {
@@ -118,8 +143,17 @@ function eachDay(start, end) {
   return days;
 }
 
+function slotWindow(date, slot, length) {
+  return {
+    start: dateAtHour(date, slot.startHour),
+    end: dateAtHour(addDays(date, length - 1 + slot.endOffsetDays), slot.endHour)
+  };
+}
+
 function overlaps(eventStart, eventEnd, rangeItem) {
-  return parseDate(rangeItem.start) <= eventEnd && parseDate(rangeItem.end) >= eventStart;
+  const rangeStart = parseDate(rangeItem.start);
+  const rangeEnd = addDays(parseDate(rangeItem.end), 1);
+  return rangeStart < eventEnd && rangeEnd > eventStart;
 }
 
 function selectedPeople() {
@@ -129,11 +163,11 @@ function selectedPeople() {
   });
 }
 
-function conflictsFor(eventStart, length, people = selectedPeople()) {
-  const eventEnd = addDays(eventStart, length - 1);
+function conflictsForSlot(date, slot, length, people = selectedPeople()) {
+  const event = slotWindow(date, slot, length);
   return people.flatMap((person) =>
     person.ranges
-      .filter((item) => overlaps(eventStart, eventEnd, item))
+      .filter((item) => overlaps(event.start, event.end, item))
       .map((item) => ({ person: person.name, ...item }))
   );
 }
@@ -177,15 +211,24 @@ function renderPlanner() {
   const length = Number(els.eventLength.value);
   const starts = candidateStarts(els.startDate.value, els.endDate.value, length, els.weekendsOnly.checked);
   const ranked = starts
-    .map((date) => {
-      const conflicts = conflictsFor(date, length, people);
-      return {
-        date,
-        conflicts,
-        score: scoreFor(conflicts, people.length)
-      };
-    })
-    .sort((a, b) => b.score - a.score || a.conflicts.length - b.conflicts.length || a.date - b.date);
+    .flatMap((date) =>
+      slots.map((slot) => {
+        const conflicts = conflictsForSlot(date, slot, length, people);
+        return {
+          date,
+          slot,
+          conflicts,
+          score: scoreFor(conflicts, people.length)
+        };
+      })
+    )
+    .sort(
+      (a, b) =>
+        b.score - a.score ||
+        a.conflicts.length - b.conflicts.length ||
+        a.date - b.date ||
+        slots.indexOf(a.slot) - slots.indexOf(b.slot)
+    );
 
   renderBest(ranked.slice(0, 9), people.length, length);
   renderCalendar(people);
@@ -204,6 +247,7 @@ function renderBest(picks, peopleCount, length) {
       return `
         <article class="pick ${className}">
           <strong class="pick__date">${label}</strong>
+          <span class="pick__slot">${pick.slot.name} · ${pick.slot.timeLabel}</span>
           <span class="pick__score">${pick.score}/${peopleCount} available</span>
           <div class="conflicts">
             ${conflicts.length ? conflicts.map((item) => `<span class="chip">${item}</span>`).join("") : `<span class="chip">No conflicts</span>`}
@@ -246,13 +290,22 @@ function monthMarkup(month, people) {
   const last = new Date(month.getFullYear(), month.getMonth() + 1, 0);
   const blanks = Array.from({ length: first.getDay() }, () => `<div class="day is-outside"></div>`);
   const days = eachDay(toKey(first), toKey(last)).map((date) => {
-    const conflicts = conflictsFor(date, 1, people);
-    const level = levelFor(conflicts);
-    const names = [...new Set(conflicts.map((item) => item.person.split(" ")[0]))];
+    const daySlots = slots.map((slot) => {
+      const conflicts = conflictsForSlot(date, slot, 1, people);
+      return {
+        slot,
+        conflicts,
+        level: levelFor(conflicts),
+        names: [...new Set(conflicts.map((item) => item.person.split(" ")[0]))]
+      };
+    });
+    const level = Math.max(...daySlots.map((item) => item.level));
     return `
-      <button class="day" data-level="${level}" title="${tooltipFor(date, conflicts, people.length)}">
+      <button class="day" data-level="${level}" title="${dayTooltipFor(date, daySlots, people.length)}">
         <strong>${date.getDate()}</strong>
-        <span>${names.slice(0, 2).join(", ")}</span>
+        <span class="slot-list">
+          ${daySlots.map((item) => slotMarkup(item)).join("")}
+        </span>
       </button>
     `;
   });
@@ -269,9 +322,18 @@ function monthMarkup(month, people) {
   `;
 }
 
-function tooltipFor(date, conflicts, peopleCount) {
-  if (!conflicts.length) return `${compactDate.format(date)}: ${peopleCount}/${peopleCount} available`;
-  return `${compactDate.format(date)}: ${uniqueConflicts(conflicts).join("; ")}`;
+function slotMarkup(item) {
+  return `<span class="slot-pill" data-level="${item.level}">${item.slot.shortName}</span>`;
+}
+
+function dayTooltipFor(date, daySlots, peopleCount) {
+  const details = daySlots.map((item) => {
+    const conflicts = uniqueConflicts(item.conflicts);
+    const availability = `${peopleCount - conflicts.length}/${peopleCount} available`;
+    const status = conflicts.length ? conflicts.join(", ") : "clear";
+    return `${item.slot.name} (${item.slot.timeLabel}): ${availability}; ${status}`;
+  });
+  return `${compactDate.format(date)}: ${details.join(" | ")}`;
 }
 
 function renderSource() {

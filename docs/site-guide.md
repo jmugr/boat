@@ -1,6 +1,6 @@
 # My Way Summer Planner Guide
 
-This site helps pick the best summer event dates by comparing candidate dates against out-of-town date ranges.
+This site helps pick the best summer event slots by comparing candidate dates and time windows against out-of-town date ranges.
 
 ## Files
 
@@ -17,6 +17,13 @@ The default planning window is:
 - End: `2026-10-31`
 
 The default event filter is weekends only. Event length can be changed from 1 to 4 days.
+
+Each candidate day is evaluated in two slots:
+
+- Morning: `9am-4pm`
+- Evening: `5pm-8am`
+
+Evening slots cross midnight, so an evening slot on July 23 runs from `2026-07-23 5pm` through `2026-07-24 8am`.
 
 ## Out-of-town Data
 
@@ -66,7 +73,14 @@ const captains = new Set(["Joe", "Sean"]);
 
 Captain status affects calendar severity colors.
 
-## Calendar Colors
+## Calendar Slots And Colors
+
+Each calendar day shows two compact slot markers:
+
+- `AM`: morning slot, `9am-4pm`
+- `PM`: evening slot, `5pm-8am`
+
+Hovering a calendar day shows the full morning and evening availability details, including who is unavailable in each slot.
 
 The calendar color logic is:
 
@@ -75,7 +89,9 @@ The calendar color logic is:
 - Orange: Joe or Sean is out of town.
 - Red: both Joe and Sean are out of town.
 
-The logic is implemented in `levelFor(conflicts)` in `app.js`.
+The severity logic is implemented in `levelFor(conflicts)` in `app.js`.
+
+Calendar days use the highest severity from that day's two slots as the day background. The individual `AM` and `PM` markers are also color-coded by their own slot severity.
 
 The CSS colors are implemented with `.day[data-level="0"]` behavior through the base `.day` style, plus:
 
@@ -85,17 +101,20 @@ The CSS colors are implemented with `.day[data-level="0"]` behavior through the 
 
 ## Best Picks
 
-The Best Picks section ranks candidate event starts by the number of selected people available.
+The Best Picks section ranks candidate event slots by the number of selected people available.
 
 Ranking flow:
 
 1. Build candidate dates from the selected start/end range.
 2. Optionally limit candidates to weekends.
-3. For each candidate, check whether the event range overlaps any OOT range.
-4. Score the candidate as selected people minus unavailable people.
-5. Sort by best score, then fewest conflicts, then earliest date.
+3. Expand each candidate date into morning and evening slots.
+4. For each slot, check whether the slot window overlaps any OOT range.
+5. Score the slot as selected people minus unavailable people.
+6. Sort by best score, then fewest conflicts, then earliest date, then morning before evening.
 
-The top nine candidates are shown.
+The top nine candidate slots are shown. Each card displays the date, the slot name, the slot time window, availability, and conflicts.
+
+OOT ranges are stored as inclusive dates. For overlap checks, each OOT date range is treated as covering full days from the start date at midnight through the day after the end date at midnight. This lets partial-day slots overlap correctly, including evening slots that continue into the next day.
 
 ## Filters
 
@@ -110,4 +129,3 @@ my-way-planner-oots-v1
 ```
 
 The management UI has been temporarily removed, but `loadPlanner()` still reads compatible saved data and normalizes names to first names. If browser-local saved data causes confusion during testing, clear site data for `file:///C:/Projects/boat/index.html` or remove that key from local storage.
-
