@@ -12,6 +12,8 @@
   --orange: #d96c20;
   --red: #b6463b;
   --target: #0f7c91;
+  --weekend: #5b5ab7;
+  --holiday: #8f3f76;
   --shadow: 0 18px 45px rgba(23, 32, 38, .12);
 }
 
@@ -276,6 +278,14 @@ select {
   background: var(--target);
 }
 
+.weekend {
+  background: var(--weekend);
+}
+
+.holiday {
+  background: var(--holiday);
+}
+
 .best-list {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -316,6 +326,33 @@ select {
   color: #2b6267;
   font-size: .8rem;
   font-weight: 850;
+}
+
+.indicators {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  margin: 0 0 8px;
+}
+
+.indicator {
+  display: inline-flex;
+  align-items: center;
+  min-height: 20px;
+  padding: 3px 7px;
+  border-radius: 999px;
+  color: #fff;
+  font-size: .68rem;
+  font-weight: 850;
+  line-height: 1;
+}
+
+.indicator--weekend {
+  background: var(--weekend);
+}
+
+.indicator--holiday {
+  background: var(--holiday);
 }
 
 .pick__score {
@@ -438,6 +475,13 @@ select {
   font-size: 1.16rem;
 }
 
+.selected-holidays {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 8px;
+}
+
 .date-detail__count {
   flex: 0 0 auto;
   padding: 6px 9px;
@@ -533,6 +577,15 @@ select {
   display: block;
 }
 
+.slot-detail .indicators {
+  display: flex;
+  margin-top: 7px;
+}
+
+.slot-detail .indicator {
+  display: inline-flex;
+}
+
 .slot-detail > div:first-child span {
   margin-top: 2px;
   color: var(--muted);
@@ -616,6 +669,24 @@ select {
   color: inherit;
 }
 
+.day-indicators {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 9px;
+}
+
+.day-indicator {
+  display: block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+
+.day-indicator--holiday {
+  background: var(--holiday);
+}
+
 .slot-list {
   display: flex;
   justify-content: center;
@@ -625,19 +696,49 @@ select {
 
 .slot-pill {
   display: grid;
+  grid-template-rows: 1fr auto;
   place-items: center;
-  width: 28px;
-  min-height: 15px;
+  width: 32px;
+  min-height: 26px;
   border: 1px solid rgba(23, 32, 38, .14);
   border-radius: 4px;
   padding: 2px;
   color: #173225;
-  background: rgba(255, 255, 255, .72);
+  background: #dceee0;
   font-size: .68rem;
   font-weight: 750;
   line-height: 1;
   overflow: hidden;
   white-space: nowrap;
+}
+
+.slot-pill__text {
+  display: block;
+}
+
+.slot-pill__marks {
+  display: flex;
+  gap: 2px;
+  min-height: 8px;
+}
+
+.slot-pill__marks i {
+  display: grid;
+  place-items: center;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  color: transparent;
+  font-style: normal;
+  font-size: 0;
+}
+
+.slot-pill__marks i[data-type="weekend"] {
+  background: var(--weekend);
+}
+
+.slot-pill__marks i[data-type="holiday"] {
+  background: var(--holiday);
 }
 
 .slot-pill[data-target-slot="true"] {

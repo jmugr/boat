@@ -4,9 +4,13 @@ const planner = {
     {
       name: "Aaron",
       ranges: [
+        slotRange("2026-06-03", "evening"),
         range("2026-06-12", "2026-06-12", "June 12"),
+        range("2026-06-26", "2026-06-28", "June 26-28"),
         range("2026-06-25", "2026-06-25", "June 25"),
-        range("2026-07-03", "2026-07-05", "July 4th weekend")
+        range("2026-07-14", "2026-07-14", "July 14"),
+        range("2026-07-03", "2026-07-05", "July 4th weekend"),
+        slotRange("2026-08-17", "evening")
       ]
     },
     {
@@ -48,7 +52,11 @@ const planner = {
     {
       name: "Joe",
       ranges: [
+        slotRange("2026-05-30", "evening"),
+        slotRange("2026-06-03", "evening"),
+        slotRange("2026-06-12", "evening"),
         range("2026-06-27", "2026-06-28"),
+        slotRange("2026-07-11", "evening"),
         range("2026-07-17", "2026-07-19"),
         range("2026-08-17", "2026-09-01"),
         range("2026-09-04", "2026-09-07")
@@ -62,7 +70,11 @@ const defaultPeople = planner.people.map(normalizePerson);
 const joeRennerDefaults = {
   name: "Joe",
   ranges: [
+    slotRange("2026-05-30", "evening"),
+    slotRange("2026-06-03", "evening"),
+    slotRange("2026-06-12", "evening"),
     range("2026-06-27", "2026-06-28"),
+    slotRange("2026-07-11", "evening"),
     range("2026-07-17", "2026-07-19"),
     range("2026-08-17", "2026-09-01"),
     range("2026-09-04", "2026-09-07")
@@ -114,6 +126,14 @@ const slots = [
     endOffsetDays: 1
   }
 ];
+const holidays = [
+  holiday("2026-05-25", "Memorial Day"),
+  holiday("2026-06-19", "Juneteenth National Independence Day"),
+  holiday("2026-07-03", "Independence Day observed"),
+  holiday("2026-09-07", "Labor Day"),
+  holiday("2026-10-12", "Columbus Day")
+];
+const holidayLookup = new Map(holidays.map((item) => [item.date, item.title]));
 const targetSlots = [
   targetSlot("2026-07-10", "16:00", null, "Chris Lake Navy Pier Open Air"),
   targetSlot("2026-07-11", "16:00", null, "Chris Lake Navy Pier Open Air"),
@@ -129,11 +149,19 @@ function range(start, end) {
   return { start, end };
 }
 
+function slotRange(date, slotId) {
+  return { start: date, end: date, block: "slot", slotId };
+}
+
 function targetSlot(date, startTime, endTime, title) {
   return { date, startTime, endTime, title };
 }
 
 function targetDate(date, title) {
+  return { date, title };
+}
+
+function holiday(date, title) {
   return { date, title };
 }
 
@@ -198,6 +226,13 @@ function allDayOverlap(date, length, rangeItem) {
 }
 
 function blocksSlot(date, slot, length, rangeItem) {
+  if (rangeItem.block === "slot") {
+    const blockedSlot = slots.find((item) => item.id === rangeItem.slotId);
+    if (!blockedSlot) return false;
+    const event = slotWindow(date, slot, length);
+    const blocked = slotWindow(parseDate(rangeItem.start), blockedSlot, 1);
+    return event.start < blocked.end && blocked.start < event.end;
+  }
   if (rangeItem.block === "timed") {
     return timedOverlap(date, slot, length, rangeItem);
   }
@@ -270,6 +305,7 @@ function renderPlanner() {
           date,
           slot,
           conflicts,
+          indicators: pickIndicators(date, slot, length),
           score: scoreFor(conflicts, people.length)
         };
       })
@@ -302,6 +338,7 @@ function renderBest(picks, peopleCount, length) {
         <article class="pick ${className}">
           <strong class="pick__date">${label}</strong>
           <span class="pick__slot">${pick.slot.name} · ${pick.slot.timeLabel}</span>
+          ${indicatorMarkup(pick.indicators)}
           <span class="pick__score">${pick.score}/${peopleCount} available</span>
           <div class="conflicts">
             ${conflicts.length ? conflicts.map((item) => `<span class="chip">${item}</span>`).join("") : `<span class="chip">No conflicts</span>`}
@@ -325,6 +362,52 @@ function uniqueConflicts(conflicts) {
 function dateLabel(date, length) {
   if (length === 1) return `${weekday.format(date)}, ${compactDate.format(date)}`;
   return `${compactDate.format(date)}-${compactDate.format(addDays(date, length - 1))}`;
+}
+
+function slotIndicators(date, slot, length = 1) {
+  const indicators = [];
+  if (isWeekendSlot(date, slot, length)) {
+    indicators.push({ type: "weekend", label: "Wknd", title: "Weekend slot" });
+  }
+
+  return indicators;
+}
+
+function pickIndicators(date, slot, length = 1) {
+  const indicators = slotIndicators(date, slot, length);
+  const holidayNames = holidaysForWindow(date, length);
+  if (holidayNames.length) {
+    indicators.push({ type: "holiday", label: "Hol", title: holidayNames.join(", ") });
+  }
+
+  return indicators;
+}
+
+function isWeekendSlot(date, slot, length = 1) {
+  const event = slotWindow(date, slot, length);
+  for (let day = new Date(event.start); day < event.end; day = addDays(day, 1)) {
+    const dayStart = new Date(day.getFullYear(), day.getMonth(), day.getDate());
+    const dayEnd = addDays(dayStart, 1);
+    const dayOfWeek = dayStart.getDay();
+    if (dayOfWeek === 6 || dayOfWeek === 0) return true;
+    if (dayOfWeek === 5 && event.end > dateAtHour(dayStart, 17) && event.start < dayEnd) return true;
+  }
+  return false;
+}
+
+function holidaysForWindow(date, length = 1) {
+  return Array.from({ length }, (_, index) => toKey(addDays(date, index)))
+    .map((dateKey) => holidayLookup.get(dateKey))
+    .filter(Boolean);
+}
+
+function indicatorMarkup(indicators) {
+  if (!indicators.length) return "";
+  return `
+    <span class="indicators" aria-label="${escapeHtml(indicators.map((item) => item.title).join(", "))}">
+      ${indicators.map((item) => `<span class="indicator indicator--${item.type}" title="${escapeHtml(item.title)}">${item.label}</span>`).join("")}
+    </span>
+  `;
 }
 
 function targetSlotsForDate(date) {
@@ -428,6 +511,7 @@ function monthMarkup(month, people, start, end) {
   const blanks = Array.from({ length: visibleStart.getDay() }, () => `<div class="day is-outside"></div>`);
   const days = eachDay(toKey(visibleStart), toKey(visibleEnd)).map((date) => {
     const dateKey = toKey(date);
+    const holidayNames = holidaysForWindow(date, 1);
     const targets = targetSlotsForDate(dateKey);
     const targetSlotIds = targetSlotIdsForDate(date, targets);
     const targetOnDate = targets.length > 0 && targetSlotIds.size === 0;
@@ -438,6 +522,7 @@ function monthMarkup(month, people, start, end) {
         conflicts,
         level: levelFor(conflicts),
         names: [...new Set(conflicts.map((item) => item.person.split(" ")[0]))],
+        indicators: slotIndicators(date, slot, 1),
         isTarget: targetSlotIds.has(slot.id)
       };
     });
@@ -445,6 +530,7 @@ function monthMarkup(month, people, start, end) {
     return `
       <button class="day" data-date="${dateKey}" data-level="${level}" data-target-date="${targetOnDate}" aria-pressed="${dateKey === selectedDateKey}" title="${dayTooltipFor(date, daySlots, people.length, targets)}">
         <strong>${date.getDate()}</strong>
+        ${dayIndicatorMarkup(holidayNames)}
         <span class="slot-list">
           ${daySlots.map((item) => slotMarkup(item)).join("")}
         </span>
@@ -464,6 +550,15 @@ function monthMarkup(month, people, start, end) {
   `;
 }
 
+function dayIndicatorMarkup(holidayNames) {
+  if (!holidayNames.length) return "";
+  return `
+    <span class="day-indicators" aria-label="${escapeHtml(holidayNames.join(", "))}">
+      <i class="day-indicator day-indicator--holiday" title="${escapeHtml(holidayNames.join(", "))}"></i>
+    </span>
+  `;
+}
+
 function renderDateDetail(people) {
   if (!selectedDateKey) {
     els.dateDetail.innerHTML = `
@@ -478,16 +573,19 @@ function renderDateDetail(people) {
   const date = parseDate(selectedDateKey);
   const daySlots = slots.map((slot) => ({
     slot,
-    conflicts: conflictsForSlot(date, slot, 1, people)
+    conflicts: conflictsForSlot(date, slot, 1, people),
+    indicators: slotIndicators(date, slot, 1)
   }));
   const allConflicts = uniqueConflicts(daySlots.flatMap((item) => item.conflicts));
   const targets = targetSlotsForDate(selectedDateKey);
+  const holidayNames = holidaysForWindow(date, 1);
 
   els.dateDetail.innerHTML = `
     <div class="date-detail__head">
       <div>
         <p class="eyebrow">Selected Date</p>
         <h3>${fullDate.format(date)}</h3>
+        ${selectedDateHolidayMarkup(holidayNames)}
       </div>
       <span class="date-detail__count">${allConflicts.length ? `${allConflicts.length} OOT` : "All clear"}</span>
     </div>
@@ -502,6 +600,15 @@ function renderDateDetail(people) {
     ` : ""}
     <div class="date-detail__slots">
       ${ootDetailMarkup(daySlots, people.length)}
+    </div>
+  `;
+}
+
+function selectedDateHolidayMarkup(holidayNames) {
+  if (!holidayNames.length) return "";
+  return `
+    <div class="selected-holidays" aria-label="${escapeHtml(holidayNames.join(", "))}">
+      ${holidayNames.map((name) => `<span class="indicator indicator--holiday">${escapeHtml(name)}</span>`).join("")}
     </div>
   `;
 }
@@ -567,6 +674,7 @@ function slotDetailMarkup(item, peopleCount) {
       <div>
         <strong>${item.slot.name}</strong>
         <span>${item.slot.timeLabel}</span>
+        ${indicatorMarkup(item.indicators)}
       </div>
       <div class="slot-detail__people">
         ${conflicts.length ? conflicts.map((name) => `<span class="chip">${escapeHtml(name)}</span>`).join("") : `<span class="chip chip--clear">${peopleCount}/${peopleCount} available</span>`}
@@ -576,7 +684,16 @@ function slotDetailMarkup(item, peopleCount) {
 }
 
 function slotMarkup(item) {
-  return `<span class="slot-pill" data-level="${item.level}" data-target-slot="${item.isTarget}">${item.slot.shortName}</span>`;
+  const title = item.indicators.map((indicator) => indicator.title).join(", ");
+  const marks = item.indicators.length
+    ? `<span class="slot-pill__marks">${item.indicators.map((indicator) => `<i data-type="${indicator.type}">${indicator.label[0]}</i>`).join("")}</span>`
+    : "";
+  return `
+    <span class="slot-pill" data-level="${item.level}" data-target-slot="${item.isTarget}" title="${escapeHtml(title)}">
+      <span class="slot-pill__text">${item.slot.shortName}</span>
+      ${marks}
+    </span>
+  `;
 }
 
 function targetDetailMarkup(item) {
@@ -593,7 +710,8 @@ function dayTooltipFor(date, daySlots, peopleCount, targets = []) {
     const conflicts = uniqueConflicts(item.conflicts);
     const availability = `${peopleCount - conflicts.length}/${peopleCount} available`;
     const status = conflicts.length ? conflicts.join(", ") : "clear";
-    return `${item.slot.name} (${item.slot.timeLabel}): ${availability}; ${status}`;
+    const indicators = item.indicators.length ? `; ${item.indicators.map((indicator) => indicator.title).join(", ")}` : "";
+    return `${item.slot.name} (${item.slot.timeLabel}): ${availability}; ${status}${indicators}`;
   });
   const targetDetails = targets.map((item) => `${targetTimeLabel(item)} ${item.title}`);
   return `${compactDate.format(date)}: ${details.join(" | ")}${targetDetails.length ? ` | Targets: ${targetDetails.join("; ")}` : ""}`;
@@ -606,7 +724,7 @@ function renderSource() {
       <article class="source-card">
         <h3>${escapeHtml(person.name)}</h3>
         <ul>
-          ${person.ranges.length ? person.ranges.map((item) => `<li>${escapeHtml(dateRangeLabel(item.start, item.end))}</li>`).join("") : "<li>No OOT dates yet</li>"}
+          ${person.ranges.length ? person.ranges.map((item) => `<li>${escapeHtml(sourceRangeLabel(item))}</li>`).join("") : "<li>No OOT dates yet</li>"}
         </ul>
       </article>
     `)
@@ -654,7 +772,13 @@ function ensurePersonRanges(defaultPerson) {
 
   existing.name = defaultPerson.name;
   for (const defaultRange of defaultPerson.ranges) {
-    const hasRange = existing.ranges.some((item) => item.start === defaultRange.start && item.end === defaultRange.end);
+    const hasRange = existing.ranges.some(
+      (item) =>
+        item.start === defaultRange.start &&
+        item.end === defaultRange.end &&
+        item.block === defaultRange.block &&
+        item.slotId === defaultRange.slotId
+    );
     if (!hasRange) {
       existing.ranges.push(normalizeRange(defaultRange));
     }
@@ -679,7 +803,9 @@ function normalizeRange(item) {
   const sorted = parseDate(start) <= parseDate(end) ? [start, end] : [end, start];
   return {
     start: sorted[0],
-    end: sorted[1]
+    end: sorted[1],
+    block: item.block,
+    slotId: item.slotId
   };
 }
 
@@ -688,6 +814,12 @@ function dateRangeLabel(start, end) {
   const endDate = parseDate(end);
   if (start === end) return compactDate.format(startDate);
   return `${compactDate.format(startDate)}-${compactDate.format(endDate)}`;
+}
+
+function sourceRangeLabel(item) {
+  const label = dateRangeLabel(item.start, item.end);
+  if (item.block === "slot" && item.slotId === "evening") return `${label} PM`;
+  return label;
 }
 
 function escapeHtml(value) {
