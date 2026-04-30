@@ -160,3 +160,38 @@ node --check app.js
 ```
 
 The in-app browser was reloaded after UI changes to confirm the page rendered and browser console errors were absent.
+
+## Later UI Updates
+
+The calendar was expanded after the initial build with several interaction and planning improvements:
+
+- Clicking a calendar date now opens a selected-date detail panel.
+- The selected-date panel lists who is OOT on that day and collapses people who are OOT for both AM and PM into a single `All Day` row.
+- Current OOT ranges are treated as full calendar-day blocks. They block both AM and PM on their listed dates without spilling into adjacent overnight slots.
+- The Calendar section was separated from Best Picks, and Best Picks now appears below the calendar.
+- Dates outside the selected Start/End range are not shown. The visible range no longer leaves hidden blank week rows before the first active date.
+- Calendar hover now uses only an outline, including green clear cells.
+
+## Target Dates Added
+
+Target dates and events were added in `app.js`:
+
+- Chris Lake Navy Pier Open Air: `2026-07-10 4:00 PM`
+- Chris Lake Navy Pier Open Air: `2026-07-11 4:00 PM`
+- Lollapalooza: `2026-07-30` through `2026-08-02`, all day
+- Air and Water show: `2026-08-15 10:30 AM-3:00 PM`
+- Air and Water show: `2026-08-16 10:30 AM-3:00 PM`
+
+The calendar shows target dates with teal outlines. Timed targets outline a matching AM or PM slot when they overlap one of those slot windows. All-day targets, or timed targets that do not fit cleanly into an existing slot window, outline the whole date.
+
+A Target Dates summary was added above the calendar. It groups targets by event and shows each date/time.
+
+## Header Image Update
+
+The banner image was changed from the original marina header to a generated Jeanneau Sun Odyssey 45 DS style hero image:
+
+```text
+assets/jeanneau-sun-odyssey-45ds-hero.png
+```
+
+`index.html` now references that image in the masthead.

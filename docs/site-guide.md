@@ -7,7 +7,8 @@ This site helps pick the best summer event slots by comparing candidate dates an
 - `index.html`: page structure and controls.
 - `styles.css`: layout, colors, responsive behavior, and calendar severity styles.
 - `app.js`: planner data, date ranking logic, sorting, filtering, and rendering.
-- `assets/marina-header.png`: header image.
+- `assets/jeanneau-sun-odyssey-45ds-hero.png`: header image.
+- `assets/marina-header.png`: previous header image, currently unused.
 
 ## Planner Defaults
 
@@ -25,6 +26,8 @@ Each candidate day is evaluated in two slots:
 
 Evening slots cross midnight, so an evening slot on July 23 runs from `2026-07-23 5pm` through `2026-07-24 8am`.
 
+The current OOT ranges are date-only ranges and block the full calendar day. That means someone marked OOT on July 24 blocks both the morning and evening slots on July 24, without spilling into July 23's evening slot. A future timed or half-day OOT range can use `block: "timed"` and the timed overlap path in `app.js`.
+
 ## Out-of-town Data
 
 Out-of-town data lives in `app.js` in the `planner.people` array.
@@ -41,13 +44,41 @@ Each person has a first name and a list of date ranges:
 }
 ```
 
-Ranges are inclusive. A one-day OOT date uses the same start and end date:
+Ranges are inclusive calendar dates. A one-day OOT date uses the same start and end date:
 
 ```js
 range("2026-06-12", "2026-06-12")
 ```
 
 The site currently does not include on-page OOT management controls. To update OOT dates, edit `planner.people` in `app.js`.
+
+## Target Dates
+
+Target dates and event slots live in `app.js` in the `targetSlots` array.
+
+Timed targets use:
+
+```js
+targetSlot("2026-08-15", "10:30", "15:00", "Air and Water show")
+```
+
+All-day targets use:
+
+```js
+targetDate("2026-07-30", "Lollapalooza")
+```
+
+Current target entries are:
+
+- Chris Lake Navy Pier Open Air: `2026-07-10 4:00 PM`
+- Chris Lake Navy Pier Open Air: `2026-07-11 4:00 PM`
+- Lollapalooza: `2026-07-30` through `2026-08-02`, all day
+- Air and Water show: `2026-08-15 10:30 AM-3:00 PM`
+- Air and Water show: `2026-08-16 10:30 AM-3:00 PM`
+
+The calendar indicates targets with a teal outline. If a timed target overlaps one of the app's existing AM or PM slot windows, that slot marker is outlined. If a target is all day or does not fit cleanly inside an existing slot window, the whole date is outlined.
+
+The Target Dates summary above the calendar groups all targets by event name and shows their dates and times.
 
 ## Sorting
 
@@ -80,7 +111,16 @@ Each calendar day shows two compact slot markers:
 - `AM`: morning slot, `9am-4pm`
 - `PM`: evening slot, `5pm-8am`
 
-Hovering a calendar day shows the full morning and evening availability details, including who is unavailable in each slot.
+Hovering a calendar day shows an outline only. It does not change the cell fill.
+
+Clicking a calendar day opens the selected-date detail panel above the calendar. The panel shows:
+
+- the selected date
+- the unique people OOT that day
+- target slots on that date, if any
+- OOT detail by slot
+
+If a person is OOT for both AM and PM on a selected day, they are shown once under `All Day` instead of repeated under both slots.
 
 The calendar color logic is:
 
@@ -92,6 +132,8 @@ The calendar color logic is:
 The severity logic is implemented in `levelFor(conflicts)` in `app.js`.
 
 Calendar days use the highest severity from that day's two slots as the day background. The individual `AM` and `PM` markers are also color-coded by their own slot severity.
+
+Dates before the selected Start date and after the selected End date are not shown. The first and last visible months start at the first visible week needed for the selected range, so hidden out-of-range rows are not rendered.
 
 The CSS colors are implemented with `.day[data-level="0"]` behavior through the base `.day` style, plus:
 
@@ -114,7 +156,7 @@ Ranking flow:
 
 The top nine candidate slots are shown. Each card displays the date, the slot name, the slot time window, availability, and conflicts.
 
-OOT ranges are stored as inclusive dates. For overlap checks, each OOT date range is treated as covering full days from the start date at midnight through the day after the end date at midnight. This lets partial-day slots overlap correctly, including evening slots that continue into the next day.
+OOT ranges are stored as inclusive dates. For current date-only ranges, overlap checks use calendar-day comparison so all listed OOT dates block the full day only. This keeps date-only OOTs from leaking into neighboring overnight slots.
 
 ## Filters
 

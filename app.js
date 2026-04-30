@@ -57,6 +57,8 @@ const planner = {
   ]
 };
 
+const defaultPeople = planner.people.map(normalizePerson);
+
 const joeRennerDefaults = {
   name: "Joe",
   ranges: [
@@ -625,6 +627,7 @@ function loadPlanner() {
   } catch {
     localStorage.removeItem(storageKey);
   }
+  defaultPeople.forEach(ensurePersonRanges);
   ensurePersonRanges(joeRennerDefaults);
   sortPeople();
 }
