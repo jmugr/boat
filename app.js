@@ -527,9 +527,13 @@ function monthMarkup(month, people, start, end) {
       };
     });
     const level = Math.max(...daySlots.map((item) => item.level));
+    const ootCount = uniqueConflicts(daySlots.flatMap((item) => item.conflicts)).length;
     return `
       <button class="day" data-date="${dateKey}" data-level="${level}" data-target-date="${targetOnDate}" aria-pressed="${dateKey === selectedDateKey}" title="${dayTooltipFor(date, daySlots, people.length, targets)}">
-        <strong>${date.getDate()}</strong>
+        <span class="day__head">
+          <strong>${date.getDate()}</strong>
+          ${ootCount ? `<span class="day__oot-count">${ootCount} OOT</span>` : ""}
+        </span>
         ${dayIndicatorMarkup(holidayNames)}
         <span class="slot-list">
           ${daySlots.map((item) => slotMarkup(item)).join("")}

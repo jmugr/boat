@@ -669,6 +669,29 @@ select {
   color: inherit;
 }
 
+.day__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 3px;
+  min-width: 0;
+}
+
+.day__oot-count {
+  flex: 0 1 auto;
+  min-width: 0;
+  padding: 2px 4px;
+  border-radius: 999px;
+  color: inherit;
+  background: rgba(255, 255, 255, .35);
+  font-size: .58rem;
+  font-weight: 850;
+  line-height: 1.1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .day-indicators {
   display: flex;
   align-items: center;
