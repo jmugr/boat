@@ -9,7 +9,7 @@
   <body>
     <main class="shell">
       <section class="mast">
-        <img src="assets/marina-header.png" alt="" class="mast__image">
+        <img src="assets/jeanneau-sun-odyssey-45ds-hero.png" alt="" class="mast__image">
         <div class="mast__content">
           <p class="eyebrow">My Way</p>
           <h1>Summer Planner</h1>
@@ -48,20 +48,34 @@
         </aside>
 
         <section class="results" aria-live="polite">
-          <div class="section-head">
-            <div>
-              <p class="eyebrow">Best Picks</p>
-              <h2>Lowest-conflict event slots</h2>
+          <section class="calendar-section" aria-labelledby="calendarTitle">
+            <div class="section-head">
+              <div>
+                <p class="eyebrow">Calendar</p>
+                <h2 id="calendarTitle">Out-of-town view</h2>
+              </div>
+              <div class="legend" aria-label="Calendar legend">
+                <span><i class="good"></i>clear</span>
+                <span><i class="warn"></i>someone OOT</span>
+                <span><i class="captain"></i>captain OOT</span>
+                <span><i class="bad"></i>both captains OOT</span>
+                <span><i class="target"></i>target outline</span>
+              </div>
             </div>
-            <div class="legend" aria-label="Calendar legend">
-              <span><i class="good"></i>clear</span>
-              <span><i class="warn"></i>someone OOT</span>
-              <span><i class="captain"></i>captain OOT</span>
-              <span><i class="bad"></i>both captains OOT</span>
+            <aside class="date-detail" id="dateDetail" aria-live="polite"></aside>
+            <div class="target-summary" id="targetSummary" aria-label="Target dates"></div>
+            <div class="calendar" id="calendar"></div>
+          </section>
+
+          <section class="best-section" aria-labelledby="bestPicksTitle">
+            <div class="section-head">
+              <div>
+                <p class="eyebrow">Best Picks</p>
+                <h2 id="bestPicksTitle">Lowest-conflict event slots</h2>
+              </div>
             </div>
-          </div>
-          <div class="best-list" id="bestList"></div>
-          <div class="calendar" id="calendar"></div>
+            <div class="best-list" id="bestList"></div>
+          </section>
         </section>
       </section>
 
