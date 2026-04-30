@@ -26,7 +26,9 @@ Each candidate day is evaluated in two slots:
 
 Evening slots cross midnight, so an evening slot on July 23 runs from `2026-07-23 5pm` through `2026-07-24 8am`.
 
-The current OOT ranges are date-only ranges and block the full calendar day. That means someone marked OOT on July 24 blocks both the morning and evening slots on July 24, without spilling into July 23's evening slot. A future timed or half-day OOT range can use `block: "timed"` and the timed overlap path in `app.js`.
+Most OOT ranges are date-only ranges and block the full calendar day. That means someone marked OOT on July 24 blocks both the morning and evening slots on July 24, without spilling into July 23's evening slot.
+
+PM-only OOT entries use `slotRange(date, "evening")`. They block the evening slot window for that date, including multi-day candidate windows that overlap that PM period.
 
 ## Out-of-town Data
 
@@ -50,7 +52,43 @@ Ranges are inclusive calendar dates. A one-day OOT date uses the same start and 
 range("2026-06-12", "2026-06-12")
 ```
 
+PM-only OOT dates use:
+
+```js
+slotRange("2026-06-12", "evening")
+```
+
+The source list displays these as `PM`.
+
 The site currently does not include on-page OOT management controls. To update OOT dates, edit `planner.people` in `app.js`.
+
+Recent PM-only OOT entries include:
+
+- Aaron: `2026-06-03 PM`, `2026-08-17 PM`
+- Joe: `2026-05-30 PM`, `2026-06-03 PM`, `2026-06-12 PM`, `2026-07-11 PM`
+
+Recent full-day or multi-day OOT additions include:
+
+- Aaron: `2026-06-26` through `2026-06-28`
+- Aaron: `2026-07-14`
+
+## Holidays
+
+Holiday dates live in `app.js` in the `holidays` array:
+
+```js
+holiday("2026-05-25", "Memorial Day")
+```
+
+Current holiday entries are:
+
+- Memorial Day: `2026-05-25`
+- Juneteenth National Independence Day: `2026-06-19`
+- Independence Day observed: `2026-07-03`
+- Labor Day: `2026-09-07`
+- Columbus Day: `2026-10-12`
+
+The calendar shows holidays with a purple dot directly under the date number. If the selected date is a holiday, the selected-date detail panel shows the holiday name under the date.
 
 ## Target Dates
 
@@ -111,11 +149,14 @@ Each calendar day shows two compact slot markers:
 - `AM`: morning slot, `9am-4pm`
 - `PM`: evening slot, `5pm-8am`
 
+Available slot markers use the same green fill as clear calendar cells. Slot markers change to yellow, orange, or red when that specific AM/PM slot has conflicts.
+
 Hovering a calendar day shows an outline only. It does not change the cell fill.
 
 Clicking a calendar day opens the selected-date detail panel above the calendar. The panel shows:
 
 - the selected date
+- holiday names, if the selected date is a holiday
 - the unique people OOT that day
 - target slots on that date, if any
 - OOT detail by slot
@@ -132,6 +173,20 @@ The calendar color logic is:
 The severity logic is implemented in `levelFor(conflicts)` in `app.js`.
 
 Calendar days use the highest severity from that day's two slots as the day background. The individual `AM` and `PM` markers are also color-coded by their own slot severity.
+
+If anyone is OOT on a calendar day, the day header shows a compact `N OOT` count next to the date number. The count is unique people across that day's AM and PM slots, so a person OOT for both slots is counted once.
+
+Weekend slot indicators appear on slot markers and in the Best Picks cards. A weekend slot is any slot that overlaps Saturday, Sunday, or Friday after `5pm`, so Friday PM is considered a weekend slot.
+
+The legend labels are:
+
+- clear
+- someone OOT
+- captain OOT
+- both captains OOT
+- target
+- weekend slot
+- holiday
 
 Dates before the selected Start date and after the selected End date are not shown. The first and last visible months start at the first visible week needed for the selected range, so hidden out-of-range rows are not rendered.
 
@@ -156,7 +211,7 @@ Ranking flow:
 
 The top nine candidate slots are shown. Each card displays the date, the slot name, the slot time window, availability, and conflicts.
 
-OOT ranges are stored as inclusive dates. For current date-only ranges, overlap checks use calendar-day comparison so all listed OOT dates block the full day only. This keeps date-only OOTs from leaking into neighboring overnight slots.
+OOT ranges are stored as inclusive dates. For date-only ranges, overlap checks use calendar-day comparison so all listed OOT dates block the full day only. This keeps date-only OOTs from leaking into neighboring overnight slots. PM-only entries use slot-window overlap checks.
 
 ## Filters
 

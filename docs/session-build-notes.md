@@ -195,3 +195,22 @@ assets/jeanneau-sun-odyssey-45ds-hero.png
 ```
 
 `index.html` now references that image in the masthead.
+
+## Weekend, Holiday, And OOT Count Updates
+
+The calendar was updated with additional planning indicators:
+
+- Weekend slot indicators were added for slots that overlap Saturday, Sunday, or Friday after `5pm`.
+- 2026 holiday dates were added for Memorial Day, Juneteenth, Independence Day observed, Labor Day, and Columbus Day.
+- Holidays show as a purple dot under the calendar date number.
+- The selected-date detail panel shows the holiday name when the selected date is a holiday.
+- Calendar days with conflicts now show a compact unique `N OOT` count next to the date.
+- Available AM/PM slot markers now use the same green as clear calendar cells.
+- The legend now includes `target`, `weekend slot`, and `holiday`.
+
+PM-only OOT support was added with `slotRange(date, "evening")`. PM-only entries block the evening window for that date, including multi-day candidate windows that overlap that PM period, and appear as `PM` in the source list.
+
+Additional OOT entries were added:
+
+- Aaron: `2026-06-03 PM`, `2026-06-26` through `2026-06-28`, `2026-07-14`, `2026-08-17 PM`
+- Joe: `2026-05-30 PM`, `2026-06-03 PM`, `2026-06-12 PM`, `2026-07-11 PM`
