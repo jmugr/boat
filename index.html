@@ -25,11 +25,11 @@
         <aside class="controls" aria-label="Planner settings">
           <div class="field-row">
             <label for="startDate">Start</label>
-            <input id="startDate" type="date" value="2026-05-25">
+            <input id="startDate" type="date" value="2026-05-24">
           </div>
           <div class="field-row">
             <label for="endDate">End</label>
-            <input id="endDate" type="date" value="2026-10-31">
+            <input id="endDate" type="date" value="2026-10-18">
           </div>
           <div class="field-row">
             <label for="eventLength">Length</label>
@@ -59,13 +59,12 @@
                 <span><i class="warn"></i>someone OOT</span>
                 <span><i class="captain"></i>captain OOT</span>
                 <span><i class="bad"></i>both captains OOT</span>
-                <span><i class="target"></i>target</span>
+                <span><i class="special"></i>special</span>
                 <span><i class="weekend"></i>weekend slot</span>
                 <span><i class="holiday"></i>holiday</span>
               </div>
             </div>
             <aside class="date-detail" id="dateDetail" aria-live="polite"></aside>
-            <div class="target-summary" id="targetSummary" aria-label="Target dates"></div>
             <div class="calendar" id="calendar"></div>
           </section>
 
@@ -90,6 +89,8 @@
         </div>
         <div class="source-grid" id="sourceGrid"></div>
       </section>
+
+      <section class="special-summary" id="specialSummary" aria-label="Special dates"></section>
     </main>
 
     <script src="app.js"></script>

@@ -90,7 +90,7 @@ const els = {
   bestList: document.querySelector("#bestList"),
   calendar: document.querySelector("#calendar"),
   dateDetail: document.querySelector("#dateDetail"),
-  targetSummary: document.querySelector("#targetSummary"),
+  specialSummary: document.querySelector("#specialSummary"),
   sourceGrid: document.querySelector("#sourceGrid"),
   trackedPeople: document.querySelector("#trackedPeople"),
   trackedDates: document.querySelector("#trackedDates"),
@@ -134,15 +134,62 @@ const holidays = [
   holiday("2026-10-12", "Columbus Day")
 ];
 const holidayLookup = new Map(holidays.map((item) => [item.date, item.title]));
-const targetSlots = [
-  targetSlot("2026-07-10", "16:00", null, "Chris Lake Navy Pier Open Air"),
-  targetSlot("2026-07-11", "16:00", null, "Chris Lake Navy Pier Open Air"),
-  targetDate("2026-07-30", "Lollapalooza"),
-  targetDate("2026-07-31", "Lollapalooza"),
-  targetDate("2026-08-01", "Lollapalooza"),
-  targetDate("2026-08-02", "Lollapalooza"),
-  targetSlot("2026-08-15", "10:30", "15:00", "Air and Water show"),
-  targetSlot("2026-08-16", "10:30", "15:00", "Air and Water show")
+const climateNormals = {
+  5: [
+    [55.4, 0.15], [55.7, 0.14], [56.1, 0.15], [56.4, 0.15], [56.8, 0.14], [57.2, 0.14], [57.5, 0.15], [57.8, 0.15],
+    [58.2, 0.15], [58.5, 0.15], [58.9, 0.15], [59.2, 0.15], [59.6, 0.16], [59.9, 0.15], [60.2, 0.14], [60.6, 0.15],
+    [60.9, 0.15], [61.2, 0.14], [61.6, 0.15], [61.9, 0.15], [62.3, 0.15], [62.6, 0.15], [62.9, 0.14], [63.3, 0.14],
+    [63.6, 0.14], [63.9, 0.13], [64.3, 0.14], [64.6, 0.14], [65.0, 0.13], [65.3, 0.13], [65.6, 0.14]
+  ],
+  6: [
+    [66.0, 0.14], [66.3, 0.13], [66.7, 0.14], [67.0, 0.14], [67.4, 0.15], [67.7, 0.14], [68.0, 0.14], [68.4, 0.15],
+    [68.7, 0.14], [69.1, 0.14], [69.4, 0.14], [69.7, 0.15], [70.0, 0.14], [70.4, 0.14], [70.7, 0.14], [71.0, 0.14],
+    [71.3, 0.13], [71.6, 0.14], [71.9, 0.14], [72.1, 0.13], [72.4, 0.14], [72.7, 0.14], [72.9, 0.13], [73.2, 0.13],
+    [73.4, 0.13], [73.6, 0.13], [73.8, 0.13], [74.0, 0.13], [74.2, 0.12], [74.4, 0.12]
+  ],
+  7: [
+    [74.6, 0.11], [74.7, 0.11], [74.9, 0.10], [75.0, 0.11], [75.1, 0.11], [75.2, 0.11], [75.3, 0.11], [75.4, 0.11],
+    [75.5, 0.12], [75.6, 0.13], [75.6, 0.12], [75.7, 0.12], [75.7, 0.11], [75.7, 0.12], [75.7, 0.11], [75.7, 0.12],
+    [75.7, 0.12], [75.7, 0.11], [75.7, 0.12], [75.7, 0.12], [75.7, 0.13], [75.7, 0.12], [75.6, 0.13], [75.6, 0.13],
+    [75.6, 0.13], [75.5, 0.13], [75.5, 0.13], [75.4, 0.12], [75.4, 0.13], [75.3, 0.14], [75.3, 0.13]
+  ],
+  8: [
+    [75.2, 0.15], [75.1, 0.15], [75.1, 0.14], [75.0, 0.14], [75.0, 0.14], [74.9, 0.14], [74.8, 0.12], [74.7, 0.13],
+    [74.7, 0.14], [74.6, 0.13], [74.5, 0.14], [74.4, 0.14], [74.3, 0.14], [74.2, 0.15], [74.1, 0.14], [74.0, 0.15],
+    [73.9, 0.15], [73.8, 0.14], [73.7, 0.13], [73.6, 0.14], [73.4, 0.13], [73.3, 0.13], [73.1, 0.13], [73.0, 0.13],
+    [72.8, 0.13], [72.6, 0.13], [72.4, 0.13], [72.2, 0.13], [72.0, 0.13], [71.8, 0.14], [71.5, 0.14]
+  ],
+  9: [
+    [71.3, 0.12], [71.0, 0.12], [70.7, 0.11], [70.5, 0.12], [70.2, 0.12], [69.9, 0.11], [69.5, 0.11], [69.2, 0.11],
+    [68.9, 0.10], [68.6, 0.10], [68.2, 0.11], [67.8, 0.10], [67.5, 0.10], [67.1, 0.10], [66.7, 0.10], [66.3, 0.10],
+    [65.9, 0.11], [65.5, 0.10], [65.1, 0.11], [64.7, 0.11], [64.3, 0.11], [63.9, 0.11], [63.5, 0.10], [63.1, 0.11],
+    [62.6, 0.11], [62.2, 0.10], [61.8, 0.10], [61.4, 0.10], [61.0, 0.09], [60.5, 0.10]
+  ],
+  10: [
+    [60.1, 0.11], [59.7, 0.12], [59.3, 0.11], [58.9, 0.11], [58.5, 0.11], [58.1, 0.11], [57.6, 0.11], [57.2, 0.11],
+    [56.8, 0.11], [56.4, 0.12], [56.0, 0.11], [55.6, 0.12], [55.2, 0.11], [54.8, 0.11], [54.4, 0.12], [54.0, 0.11],
+    [53.7, 0.11], [53.3, 0.12], [52.9, 0.11], [52.5, 0.10], [52.1, 0.11], [51.7, 0.11], [51.3, 0.11], [50.9, 0.11],
+    [50.5, 0.11], [50.0, 0.11], [49.6, 0.11], [49.2, 0.11], [48.8, 0.11], [48.4, 0.10], [48.0, 0.10]
+  ]
+};
+const specialSlots = [
+  specialSlot("2026-07-10", "17:00", null, "Chris Lake Navy Pier Open Air"),
+  specialSlot("2026-07-11", "17:00", null, "Chris Lake Navy Pier Open Air"),
+  specialDate("2026-07-04", "Independence Day"),
+  specialSlot("2026-07-09", "09:00", "16:00", "BLVCKSCENE"),
+  specialSlot("2026-07-10", "09:00", "16:00", "BLVCKSCENE"),
+  specialSlot("2026-07-11", "09:00", "16:00", "BLVCKSCENE"),
+  specialSlot("2026-07-11", "09:00", "16:00", "Mac Race Start"),
+  specialSlot("2026-07-12", "09:00", "16:00", "BLVCKSCENE"),
+  specialSlot("2026-07-25", "09:00", "16:00", "Chicago Scene"),
+  specialDate("2026-07-30", "Lollapalooza"),
+  specialDate("2026-07-31", "Lollapalooza"),
+  specialDate("2026-08-01", "Lollapalooza"),
+  specialDate("2026-08-02", "Lollapalooza"),
+  specialSlot("2026-08-14", "09:00", "16:00", "Air and Water Show Practice"),
+  specialSlot("2026-08-15", "10:30", "15:00", "Air and Water Show"),
+  specialSlot("2026-08-16", "10:30", "15:00", "Air and Water Show"),
+  ...navyPierFireworks()
 ];
 
 function range(start, end) {
@@ -153,16 +200,33 @@ function slotRange(date, slotId) {
   return { start: date, end: date, block: "slot", slotId };
 }
 
-function targetSlot(date, startTime, endTime, title) {
+function specialSlot(date, startTime, endTime, title) {
   return { date, startTime, endTime, title };
 }
 
-function targetDate(date, title) {
+function specialDate(date, title) {
   return { date, title };
 }
 
 function holiday(date, title) {
   return { date, title };
+}
+
+function navyPierFireworks() {
+  const shows = [];
+  for (const date of eachDay("2026-05-23", "2026-09-05")) {
+    const dateKey = toKey(date);
+    const day = date.getDay();
+    if (dateKey === "2026-07-04") continue;
+    if (day === 3) {
+      shows.push(specialSlot(dateKey, "21:00", "21:10", "Navy Pier Summer Fireworks"));
+    }
+    if (day === 6) {
+      shows.push(specialSlot(dateKey, "22:00", "22:10", "Navy Pier Summer Fireworks"));
+    }
+  }
+  shows.push(specialSlot("2026-07-04", "22:00", "22:15", "Navy Pier Independence Day Fireworks"));
+  return shows;
 }
 
 function parseDate(value) {
@@ -321,7 +385,7 @@ function renderPlanner() {
   renderBest(ranked.slice(0, 9), people.length, length);
   renderCalendar(people);
   renderDateDetail(people);
-  renderTargetSummary();
+  renderSpecialSummary();
 
   const best = ranked[0]?.score ?? 0;
   els.bestScore.textContent = `${best}/${people.length}`;
@@ -338,6 +402,7 @@ function renderBest(picks, peopleCount, length) {
         <article class="pick ${className}">
           <strong class="pick__date">${label}</strong>
           <span class="pick__slot">${pick.slot.name} · ${pick.slot.timeLabel}</span>
+          ${climateMarkup(pick.date)}
           ${indicatorMarkup(pick.indicators)}
           <span class="pick__score">${pick.score}/${peopleCount} available</span>
           <div class="conflicts">
@@ -401,6 +466,34 @@ function holidaysForWindow(date, length = 1) {
     .filter(Boolean);
 }
 
+function climateForDate(date) {
+  const item = climateNormals[date.getMonth() + 1]?.[date.getDate() - 1];
+  if (!item) return null;
+  return { average: item[0], precipitation: item[1] };
+}
+
+function climateLabel(date) {
+  const climate = climateForDate(date);
+  if (!climate) return "";
+  return `${formatNumber(climate.average)}F avg - ${climate.precipitation.toFixed(2)} in precip`;
+}
+
+function climateShortLabel(date) {
+  const climate = climateForDate(date);
+  if (!climate) return "";
+  return `${Math.round(climate.average)}F`;
+}
+
+function climateMarkup(date) {
+  const label = climateLabel(date);
+  if (!label) return "";
+  return `<span class="climate-chip" title="Chicago normal weather from NWS, 1991-2020">${escapeHtml(label)}</span>`;
+}
+
+function formatNumber(value) {
+  return Number.isInteger(value) ? String(value) : value.toFixed(1);
+}
+
 function indicatorMarkup(indicators) {
   if (!indicators.length) return "";
   return `
@@ -410,12 +503,12 @@ function indicatorMarkup(indicators) {
   `;
 }
 
-function targetSlotsForDate(date) {
+function specialSlotsForDate(date) {
   const dateKey = typeof date === "string" ? date : toKey(date);
-  return targetSlots.filter((item) => item.date === dateKey);
+  return specialSlots.filter((item) => item.date === dateKey);
 }
 
-function targetWindow(item) {
+function specialWindow(item) {
   if (!item.startTime) return null;
   const date = parseDate(item.date);
   const start = dateAtTime(date, item.startTime);
@@ -423,18 +516,18 @@ function targetWindow(item) {
   return { start, end };
 }
 
-function targetOverlapsSlot(date, slot, item) {
-  const event = targetWindow(item);
+function specialOverlapsSlot(date, slot, item) {
+  const event = specialWindow(item);
   if (!event) return false;
   const slotEvent = slotWindow(date, slot, 1);
   return event.start < slotEvent.end && event.end > slotEvent.start;
 }
 
-function targetSlotIdsForDate(date, targets) {
+function specialSlotIdsForDate(date, specials) {
   return new Set(
-    targets.flatMap((item) =>
+    specials.flatMap((item) =>
       slots
-        .filter((slot) => targetOverlapsSlot(date, slot, item))
+        .filter((slot) => specialOverlapsSlot(date, slot, item))
         .map((slot) => slot.id)
     )
   );
@@ -447,14 +540,14 @@ function timeLabel(value) {
   return `${displayHour}:${String(minute).padStart(2, "0")} ${suffix}`;
 }
 
-function targetTimeLabel(item) {
+function specialTimeLabel(item) {
   if (!item.startTime) return "All Day";
   if (!item.endTime) return timeLabel(item.startTime);
   return `${timeLabel(item.startTime)}-${timeLabel(item.endTime)}`;
 }
 
-function renderTargetSummary() {
-  const grouped = targetSlots.reduce((groups, item) => {
+function renderSpecialSummary() {
+  const grouped = specialSlots.reduce((groups, item) => {
     if (!groups.has(item.title)) {
       groups.set(item.title, []);
     }
@@ -462,32 +555,32 @@ function renderTargetSummary() {
     return groups;
   }, new Map());
 
-  els.targetSummary.innerHTML = `
-    <div class="target-summary__head">
-      <p class="eyebrow">Target Dates</p>
-      <strong>${targetSlots.length} slots</strong>
+  els.specialSummary.innerHTML = `
+    <div class="special-summary__head">
+      <p class="eyebrow">Special Dates</p>
+      <strong>${specialSlots.length} slots</strong>
     </div>
-    <div class="target-summary__list">
-      ${[...grouped.entries()].map(targetGroupMarkup).join("")}
+    <div class="special-summary__list">
+      ${[...grouped.entries()].map(specialGroupMarkup).join("")}
     </div>
   `;
 }
 
-function targetGroupMarkup([title, items]) {
+function specialGroupMarkup([title, items]) {
   const sorted = [...items].sort((a, b) => a.date.localeCompare(b.date) || (a.startTime || "").localeCompare(b.startTime || ""));
   return `
-    <article class="target-summary__item">
+    <article class="special-summary__item">
       <strong>${escapeHtml(title)}</strong>
       <div>
-        ${sorted.map((item) => `<span class="target-summary__chip">${escapeHtml(targetSummaryDateLabel(item))}</span>`).join("")}
+        ${sorted.map((item) => `<span class="special-summary__chip">${escapeHtml(specialSummaryDateLabel(item))}</span>`).join("")}
       </div>
     </article>
   `;
 }
 
-function targetSummaryDateLabel(item) {
+function specialSummaryDateLabel(item) {
   const date = compactDate.format(parseDate(item.date));
-  return `${date}, ${targetTimeLabel(item)}`;
+  return `${date}, ${specialTimeLabel(item)}`;
 }
 
 function renderCalendar(people) {
@@ -512,9 +605,11 @@ function monthMarkup(month, people, start, end) {
   const days = eachDay(toKey(visibleStart), toKey(visibleEnd)).map((date) => {
     const dateKey = toKey(date);
     const holidayNames = holidaysForWindow(date, 1);
-    const targets = targetSlotsForDate(dateKey);
-    const targetSlotIds = targetSlotIdsForDate(date, targets);
-    const targetOnDate = targets.length > 0 && targetSlotIds.size === 0;
+    const climate = climateShortLabel(date);
+    const specials = specialSlotsForDate(dateKey);
+    const specialSlotIds = specialSlotIdsForDate(date, specials);
+    const hasAllDaySpecial = specials.some((item) => !item.startTime);
+    const specialOnDate = hasAllDaySpecial || (specials.length > 0 && specialSlotIds.size === 0);
     const daySlots = slots.map((slot) => {
       const conflicts = conflictsForSlot(date, slot, 1, people);
       return {
@@ -523,18 +618,18 @@ function monthMarkup(month, people, start, end) {
         level: levelFor(conflicts),
         names: [...new Set(conflicts.map((item) => item.person.split(" ")[0]))],
         indicators: slotIndicators(date, slot, 1),
-        isTarget: targetSlotIds.has(slot.id)
+        isSpecial: specialSlotIds.has(slot.id)
       };
     });
     const level = Math.max(...daySlots.map((item) => item.level));
     const ootCount = uniqueConflicts(daySlots.flatMap((item) => item.conflicts)).length;
     return `
-      <button class="day" data-date="${dateKey}" data-level="${level}" data-target-date="${targetOnDate}" aria-pressed="${dateKey === selectedDateKey}" title="${dayTooltipFor(date, daySlots, people.length, targets)}">
+      <button class="day" data-date="${dateKey}" data-level="${level}" data-special-date="${specialOnDate}" aria-pressed="${dateKey === selectedDateKey}" title="${dayTooltipFor(date, daySlots, people.length, specials)}">
         <span class="day__head">
           <strong>${date.getDate()}</strong>
           ${ootCount ? `<span class="day__oot-count">${ootCount} OOT</span>` : ""}
         </span>
-        ${dayIndicatorMarkup(holidayNames)}
+        ${dayMetaMarkup(climate, holidayNames)}
         <span class="slot-list">
           ${daySlots.map((item) => slotMarkup(item)).join("")}
         </span>
@@ -563,6 +658,17 @@ function dayIndicatorMarkup(holidayNames) {
   `;
 }
 
+function dayMetaMarkup(climate, holidayNames) {
+  if (!climate && !holidayNames.length) return "";
+  return `
+    <span class="day__meta">
+      ${climate ? `<span class="day__climate">${escapeHtml(climate)}</span>` : "<span></span>"}
+      ${dayIndicatorMarkup(holidayNames)}
+      <span></span>
+    </span>
+  `;
+}
+
 function renderDateDetail(people) {
   if (!selectedDateKey) {
     els.dateDetail.innerHTML = `
@@ -581,7 +687,7 @@ function renderDateDetail(people) {
     indicators: slotIndicators(date, slot, 1)
   }));
   const allConflicts = uniqueConflicts(daySlots.flatMap((item) => item.conflicts));
-  const targets = targetSlotsForDate(selectedDateKey);
+  const specials = specialSlotsForDate(selectedDateKey);
   const holidayNames = holidaysForWindow(date, 1);
 
   els.dateDetail.innerHTML = `
@@ -590,16 +696,17 @@ function renderDateDetail(people) {
         <p class="eyebrow">Selected Date</p>
         <h3>${fullDate.format(date)}</h3>
         ${selectedDateHolidayMarkup(holidayNames)}
+        ${climateMarkup(date)}
       </div>
       <span class="date-detail__count">${allConflicts.length ? `${allConflicts.length} OOT` : "All clear"}</span>
     </div>
     <div class="date-detail__summary">
       ${allConflicts.length ? allConflicts.map((name) => `<span class="chip">${escapeHtml(name)}</span>`).join("") : `<span class="chip chip--clear">No one OOT</span>`}
     </div>
-    ${targets.length ? `
-      <div class="date-detail__targets">
-        <strong>Target slots</strong>
-        ${targets.map(targetDetailMarkup).join("")}
+    ${specials.length ? `
+      <div class="date-detail__specials">
+        <strong>Special slots</strong>
+        ${specials.map(specialDetailMarkup).join("")}
       </div>
     ` : ""}
     <div class="date-detail__slots">
@@ -693,23 +800,23 @@ function slotMarkup(item) {
     ? `<span class="slot-pill__marks">${item.indicators.map((indicator) => `<i data-type="${indicator.type}">${indicator.label[0]}</i>`).join("")}</span>`
     : "";
   return `
-    <span class="slot-pill" data-level="${item.level}" data-target-slot="${item.isTarget}" title="${escapeHtml(title)}">
+    <span class="slot-pill" data-level="${item.level}" data-special-slot="${item.isSpecial}" title="${escapeHtml(title)}">
       <span class="slot-pill__text">${item.slot.shortName}</span>
       ${marks}
     </span>
   `;
 }
 
-function targetDetailMarkup(item) {
+function specialDetailMarkup(item) {
   return `
-    <article class="target-detail">
-      <span>${escapeHtml(targetTimeLabel(item))}</span>
+    <article class="special-detail">
+      <span>${escapeHtml(specialTimeLabel(item))}</span>
       <strong>${escapeHtml(item.title)}</strong>
     </article>
   `;
 }
 
-function dayTooltipFor(date, daySlots, peopleCount, targets = []) {
+function dayTooltipFor(date, daySlots, peopleCount, specials = []) {
   const details = daySlots.map((item) => {
     const conflicts = uniqueConflicts(item.conflicts);
     const availability = `${peopleCount - conflicts.length}/${peopleCount} available`;
@@ -717,8 +824,9 @@ function dayTooltipFor(date, daySlots, peopleCount, targets = []) {
     const indicators = item.indicators.length ? `; ${item.indicators.map((indicator) => indicator.title).join(", ")}` : "";
     return `${item.slot.name} (${item.slot.timeLabel}): ${availability}; ${status}${indicators}`;
   });
-  const targetDetails = targets.map((item) => `${targetTimeLabel(item)} ${item.title}`);
-  return `${compactDate.format(date)}: ${details.join(" | ")}${targetDetails.length ? ` | Targets: ${targetDetails.join("; ")}` : ""}`;
+  const specialDetails = specials.map((item) => `${specialTimeLabel(item)} ${item.title}`);
+  const climate = climateLabel(date);
+  return `${compactDate.format(date)}: ${climate ? `${climate} | ` : ""}${details.join(" | ")}${specialDetails.length ? ` | Specials: ${specialDetails.join("; ")}` : ""}`;
 }
 
 function renderSource() {
@@ -726,13 +834,26 @@ function renderSource() {
   els.sourceGrid.innerHTML = planner.people
     .map((person) => `
       <article class="source-card">
-        <h3>${escapeHtml(person.name)}</h3>
+        <div class="source-card__head">
+          <h3>${escapeHtml(person.name)}</h3>
+          <span>${ootDayCount(person)} OOT days</span>
+        </div>
         <ul>
           ${person.ranges.length ? person.ranges.map((item) => `<li>${escapeHtml(sourceRangeLabel(item))}</li>`).join("") : "<li>No OOT dates yet</li>"}
         </ul>
       </article>
     `)
     .join("");
+}
+
+function ootDayCount(person) {
+  const days = new Set();
+  for (const item of person.ranges) {
+    for (const day of eachDay(item.start, item.end)) {
+      days.add(toKey(day));
+    }
+  }
+  return days.size;
 }
 
 function renderStats() {

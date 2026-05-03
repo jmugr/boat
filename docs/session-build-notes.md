@@ -179,8 +179,8 @@ Target dates and events were added in `app.js`:
 - Chris Lake Navy Pier Open Air: `2026-07-10 4:00 PM`
 - Chris Lake Navy Pier Open Air: `2026-07-11 4:00 PM`
 - Lollapalooza: `2026-07-30` through `2026-08-02`, all day
-- Air and Water show: `2026-08-15 10:30 AM-3:00 PM`
-- Air and Water show: `2026-08-16 10:30 AM-3:00 PM`
+- Air and Water Show: `2026-08-15 10:30 AM-3:00 PM`
+- Air and Water Show: `2026-08-16 10:30 AM-3:00 PM`
 
 The calendar shows target dates with teal outlines. Timed targets outline a matching AM or PM slot when they overlap one of those slot windows. All-day targets, or timed targets that do not fit cleanly into an existing slot window, outline the whole date.
 

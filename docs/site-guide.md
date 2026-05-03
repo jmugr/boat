@@ -14,8 +14,8 @@ This site helps pick the best summer event slots by comparing candidate dates an
 
 The default planning window is:
 
-- Start: `2026-05-25` - Memorial Day 2026
-- End: `2026-10-31`
+- Start: `2026-05-24`
+- End: `2026-10-18`
 
 The default event filter is weekends only. Event length can be changed from 1 to 4 days.
 
@@ -25,6 +25,12 @@ Each candidate day is evaluated in two slots:
 - Evening: `5pm-8am`
 
 Evening slots cross midnight, so an evening slot on July 23 runs from `2026-07-23 5pm` through `2026-07-24 8am`.
+
+## Climate Normals
+
+Daily Chicago normal average temperature and precipitation are stored in `app.js` in the `climateNormals` object for May through October.
+
+The values are National Weather Service Chicago normals for 1991-2020. The app displays them on calendar days, selected-date details, Best Picks cards, and calendar day tooltips.
 
 Most OOT ranges are date-only ranges and block the full calendar day. That means someone marked OOT on July 24 blocks both the morning and evening slots on July 24, without spilling into July 23's evening slot.
 
@@ -90,33 +96,40 @@ Current holiday entries are:
 
 The calendar shows holidays with a purple dot directly under the date number. If the selected date is a holiday, the selected-date detail panel shows the holiday name under the date.
 
-## Target Dates
+## Special Dates
 
-Target dates and event slots live in `app.js` in the `targetSlots` array.
+Special dates and event slots live in `app.js` in the `specialSlots` array.
 
-Timed targets use:
-
-```js
-targetSlot("2026-08-15", "10:30", "15:00", "Air and Water show")
-```
-
-All-day targets use:
+Timed specials use:
 
 ```js
-targetDate("2026-07-30", "Lollapalooza")
+specialSlot("2026-08-15", "10:30", "15:00", "Air and Water Show")
 ```
 
-Current target entries are:
+All-day specials use:
 
-- Chris Lake Navy Pier Open Air: `2026-07-10 4:00 PM`
-- Chris Lake Navy Pier Open Air: `2026-07-11 4:00 PM`
+```js
+specialDate("2026-07-30", "Lollapalooza")
+```
+
+Current special entries are:
+
+- Chris Lake Navy Pier Open Air: `2026-07-10 5:00 PM`
+- Chris Lake Navy Pier Open Air: `2026-07-11 5:00 PM`
+- Independence Day: `2026-07-04`, all day
+- BLVCKSCENE: `2026-07-09` through `2026-07-12`, `9:00 AM-4:00 PM`
+- Mac Race Start: `2026-07-11 9:00 AM-4:00 PM`
+- Chicago Scene: `2026-07-25 9:00 AM-4:00 PM`
 - Lollapalooza: `2026-07-30` through `2026-08-02`, all day
-- Air and Water show: `2026-08-15 10:30 AM-3:00 PM`
-- Air and Water show: `2026-08-16 10:30 AM-3:00 PM`
+- Air and Water Show Practice: `2026-08-14 9:00 AM-4:00 PM`
+- Air and Water Show: `2026-08-15 10:30 AM-3:00 PM`
+- Air and Water Show: `2026-08-16 10:30 AM-3:00 PM`
+- Navy Pier Summer Fireworks: every Wednesday at `9:00 PM` and every Saturday at `10:00 PM`, `2026-05-23` through `2026-09-05`
+- Navy Pier Independence Day Fireworks: `2026-07-04 10:00 PM-10:15 PM`
 
-The calendar indicates targets with a teal outline. If a timed target overlaps one of the app's existing AM or PM slot windows, that slot marker is outlined. If a target is all day or does not fit cleanly inside an existing slot window, the whole date is outlined.
+The calendar indicates specials with a teal outline. If a timed special overlaps one of the app's existing AM or PM slot windows, that slot marker is outlined. If a special is all day or does not fit cleanly inside an existing slot window, the whole date is outlined.
 
-The Target Dates summary above the calendar groups all targets by event name and shows their dates and times.
+The Special Dates summary at the bottom of the page groups all specials by event name and shows their dates and times.
 
 ## Sorting
 
@@ -158,7 +171,7 @@ Clicking a calendar day opens the selected-date detail panel above the calendar.
 - the selected date
 - holiday names, if the selected date is a holiday
 - the unique people OOT that day
-- target slots on that date, if any
+- special slots on that date, if any
 - OOT detail by slot
 
 If a person is OOT for both AM and PM on a selected day, they are shown once under `All Day` instead of repeated under both slots.
@@ -184,7 +197,7 @@ The legend labels are:
 - someone OOT
 - captain OOT
 - both captains OOT
-- target
+- special
 - weekend slot
 - holiday
 
