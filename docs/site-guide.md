@@ -75,7 +75,6 @@ Recent PM-only OOT entries include:
 
 Recent full-day or multi-day OOT additions include:
 
-- Aaron: `2026-06-26` through `2026-06-28`
 - Aaron: `2026-07-14`
 
 ## Holidays
@@ -123,6 +122,7 @@ Current special entries are:
 - Lollapalooza: `2026-07-30` through `2026-08-02`, all day
 - Air and Water Show Practice: `2026-08-14 9:00 AM-4:00 PM`
 - Air and Water Show: `2026-08-15 10:30 AM-3:00 PM`
+- ZHU Navy Pier Open Air: `2026-08-15 5:00 PM`
 - Air and Water Show: `2026-08-16 10:30 AM-3:00 PM`
 - Navy Pier Summer Fireworks: every Wednesday at `9:00 PM` and every Saturday at `10:00 PM`, `2026-05-23` through `2026-09-05`
 - Navy Pier Independence Day Fireworks: `2026-07-04 10:00 PM-10:15 PM`

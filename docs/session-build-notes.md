@@ -212,5 +212,5 @@ PM-only OOT support was added with `slotRange(date, "evening")`. PM-only entries
 
 Additional OOT entries were added:
 
-- Aaron: `2026-06-03 PM`, `2026-06-26` through `2026-06-28`, `2026-07-14`, `2026-08-17 PM`
+- Aaron: `2026-06-03 PM`, `2026-07-14`, `2026-08-17 PM`
 - Joe: `2026-05-30 PM`, `2026-06-03 PM`, `2026-06-12 PM`, `2026-07-11 PM`

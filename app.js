@@ -6,7 +6,6 @@ const planner = {
       ranges: [
         slotRange("2026-06-03", "evening"),
         range("2026-06-12", "2026-06-12", "June 12"),
-        range("2026-06-26", "2026-06-28", "June 26-28"),
         range("2026-06-25", "2026-06-25", "June 25"),
         range("2026-07-14", "2026-07-14", "July 14"),
         range("2026-07-03", "2026-07-05", "July 4th weekend"),
@@ -46,7 +45,9 @@ const planner = {
         range("2026-06-07", "2026-06-07", "June 7"),
         range("2026-06-12", "2026-06-12", "June 12"),
         range("2026-07-30", "2026-08-02", "July 30-Aug 2"),
-        range("2026-08-14", "2026-08-16", "Aug 14-16")
+        range("2026-08-14", "2026-08-16", "Aug 14-16"),
+        range("2026-09-04", "2026-09-13", "Sept 4-13"),
+        range("2026-09-21", "2026-09-27", "Sept 21-27")
       ]
     },
     {
@@ -188,6 +189,7 @@ const specialSlots = [
   specialDate("2026-08-02", "Lollapalooza"),
   specialSlot("2026-08-14", "09:00", "16:00", "Air and Water Show Practice"),
   specialSlot("2026-08-15", "10:30", "15:00", "Air and Water Show"),
+  specialSlot("2026-08-15", "17:00", null, "ZHU Navy Pier Open Air"),
   specialSlot("2026-08-16", "10:30", "15:00", "Air and Water Show"),
   ...navyPierFireworks()
 ];
