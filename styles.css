@@ -225,7 +225,7 @@ select {
   border-bottom: 1px solid var(--line);
 }
 
-.best-section .section-head {
+.date-search-section .section-head {
   margin-bottom: 14px;
 }
 
@@ -286,13 +286,94 @@ select {
   background: var(--holiday);
 }
 
-.best-list {
+.result-count {
+  flex: 0 0 auto;
+  padding: 6px 8px;
+  border-radius: 999px;
+  color: #174c5a;
+  background: #dff0f4;
+  font-size: .78rem;
+  font-weight: 850;
+  white-space: nowrap;
+}
+
+.date-search-controls {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  margin-bottom: 14px;
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #f8fbfa;
+}
+
+.toggle-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-content: start;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.toggle-group--wide {
+  grid-column: span 2;
+}
+
+.toggle-group legend {
+  width: 100%;
+  margin-bottom: 7px;
+  color: #35434a;
+  font-size: .88rem;
+  font-weight: 750;
+}
+
+.toggle-group label {
+  position: relative;
+  min-width: 48px;
+}
+
+.toggle-group input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.toggle-group span {
+  display: grid;
+  place-items: center;
+  min-height: 34px;
+  padding: 0 10px;
+  border: 1px solid #b7d3dc;
+  border-radius: 6px;
+  color: var(--blue);
+  background: #eef8fa;
+  font-size: .78rem;
+  font-weight: 850;
+  cursor: pointer;
+  user-select: none;
+}
+
+.toggle-group input:checked + span {
+  color: #fff;
+  border-color: var(--blue);
+  background: var(--blue);
+}
+
+.toggle-group input:focus-visible + span {
+  outline: 3px solid rgba(23, 107, 135, .28);
+  outline-offset: 2px;
+}
+
+.date-results {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 12px;
 }
 
-.pick {
+.date-result {
   min-height: 144px;
   padding: 14px;
   border: 1px solid var(--line);
@@ -301,31 +382,54 @@ select {
   background: #fff;
 }
 
-.pick.is-warn {
+.date-result.is-warn {
   border-left-color: var(--gold);
 }
 
-.pick.is-captain {
+.date-result.is-captain {
   border-left-color: var(--orange);
 }
 
-.pick.is-bad {
+.date-result.is-bad {
   border-left-color: var(--red);
 }
 
-.pick__date {
+.date-result__head {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  align-items: start;
+  margin-bottom: 8px;
+}
+
+.date-result__date {
   display: block;
   margin-bottom: 6px;
   font-size: 1.08rem;
   font-weight: 850;
 }
 
-.pick__slot {
+.date-result__slot {
   display: block;
   margin-bottom: 4px;
   color: #2b6267;
   font-size: .8rem;
   font-weight: 850;
+}
+
+.date-result__select {
+  flex: 0 0 auto;
+  min-height: 30px;
+  padding: 0 10px;
+  font-size: .76rem;
+}
+
+.date-result__meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+  margin-bottom: 8px;
 }
 
 .climate-chip {
@@ -342,6 +446,37 @@ select {
   font-size: .7rem;
   font-weight: 850;
   line-height: 1.1;
+}
+
+.metric {
+  display: inline-flex;
+  align-items: center;
+  min-height: 20px;
+  padding: 3px 7px;
+  border-radius: 999px;
+  color: #2c3b44;
+  background: #eef3f5;
+  font-size: .7rem;
+  font-weight: 850;
+  line-height: 1.1;
+}
+
+.date-result__specials {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  margin: 0 0 8px;
+}
+
+.date-result__specials span {
+  max-width: 100%;
+  padding: 4px 7px;
+  border-radius: 999px;
+  color: #073b45;
+  background: #cdeaf0;
+  font-size: .7rem;
+  font-weight: 850;
+  overflow-wrap: anywhere;
 }
 
 .indicators {
@@ -371,11 +506,29 @@ select {
   background: var(--holiday);
 }
 
-.pick__score {
+.date-result__score {
   display: inline-block;
   margin-bottom: 12px;
   color: var(--muted);
   font-size: .88rem;
+}
+
+.date-results__empty {
+  grid-column: 1 / -1;
+  display: grid;
+  gap: 4px;
+  min-height: 110px;
+  align-content: center;
+  justify-items: center;
+  border: 1px dashed #b7d3dc;
+  border-radius: 8px;
+  color: var(--muted);
+  background: #f7fcfd;
+  text-align: center;
+}
+
+.date-results__empty strong {
+  color: var(--ink);
 }
 
 .conflicts {
@@ -921,10 +1074,15 @@ button:not(.day):hover {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
-  .best-list,
+  .date-search-controls,
+  .date-results,
   .date-detail__slots,
   .source-grid {
     grid-template-columns: 1fr;
+  }
+
+  .toggle-group--wide {
+    grid-column: auto;
   }
 
 }

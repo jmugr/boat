@@ -86,9 +86,16 @@ const els = {
   startDate: document.querySelector("#startDate"),
   endDate: document.querySelector("#endDate"),
   eventLength: document.querySelector("#eventLength"),
-  weekendsOnly: document.querySelector("#weekendsOnly"),
+  sortDates: document.querySelector("#sortDates"),
+  maxOot: document.querySelector("#maxOot"),
+  dayTypeFilter: document.querySelector("#dayTypeFilter"),
+  specialFilter: document.querySelector("#specialFilter"),
+  minTemp: document.querySelector("#minTemp"),
+  dayFilters: document.querySelectorAll("[name='dayFilter']"),
+  slotFilters: document.querySelectorAll("[name='slotFilter']"),
+  dateResultCount: document.querySelector("#dateResultCount"),
   peopleFilters: document.querySelector("#peopleFilters"),
-  bestList: document.querySelector("#bestList"),
+  dateResults: document.querySelector("#dateResults"),
   calendar: document.querySelector("#calendar"),
   dateDetail: document.querySelector("#dateDetail"),
   specialSummary: document.querySelector("#specialSummary"),
@@ -345,13 +352,9 @@ function renderFilters() {
     .join("");
 }
 
-function candidateStarts(start, end, length, weekendsOnly) {
+function candidateStarts(start, end, length) {
   const lastStart = addDays(parseDate(end), -(length - 1));
-  return eachDay(start, toKey(lastStart)).filter((date) => {
-    if (!weekendsOnly) return true;
-    if (length === 1) return date.getDay() === 5 || date.getDay() === 6 || date.getDay() === 0;
-    return date.getDay() === 5 || date.getDay() === 6;
-  });
+  return eachDay(start, toKey(lastStart));
 }
 
 function renderPlanner() {
@@ -362,29 +365,11 @@ function renderPlanner() {
 
   const people = selectedPeople();
   const length = Number(els.eventLength.value);
-  const starts = candidateStarts(els.startDate.value, els.endDate.value, length, els.weekendsOnly.checked);
-  const ranked = starts
-    .flatMap((date) =>
-      slots.map((slot) => {
-        const conflicts = conflictsForSlot(date, slot, length, people);
-        return {
-          date,
-          slot,
-          conflicts,
-          indicators: pickIndicators(date, slot, length),
-          score: scoreFor(conflicts, people.length)
-        };
-      })
-    )
-    .sort(
-      (a, b) =>
-        b.score - a.score ||
-        a.conflicts.length - b.conflicts.length ||
-        a.date - b.date ||
-        slots.indexOf(a.slot) - slots.indexOf(b.slot)
-    );
+  const starts = candidateStarts(els.startDate.value, els.endDate.value, length);
+  const candidates = buildDateCandidates(starts, people, length);
+  const ranked = [...candidates].sort(defaultCandidateSort);
 
-  renderBest(ranked.slice(0, 9), people.length, length);
+  renderDateSearch(candidates, people.length, length);
   renderCalendar(people);
   renderDateDetail(people);
   renderSpecialSummary();
@@ -393,27 +378,129 @@ function renderPlanner() {
   els.bestScore.textContent = `${best}/${people.length}`;
 }
 
-function renderBest(picks, peopleCount, length) {
-  els.bestList.innerHTML = picks
-    .map((pick) => {
-      const conflicts = uniqueConflicts(pick.conflicts);
-      const level = levelFor(pick.conflicts);
-      const className = level === 3 ? "is-bad" : level === 2 ? "is-captain" : level === 1 ? "is-warn" : "";
-      const label = dateLabel(pick.date, length);
-      return `
-        <article class="pick ${className}">
-          <strong class="pick__date">${label}</strong>
-          <span class="pick__slot">${pick.slot.name} · ${pick.slot.timeLabel}</span>
-          ${climateMarkup(pick.date)}
-          ${indicatorMarkup(pick.indicators)}
-          <span class="pick__score">${pick.score}/${peopleCount} available</span>
-          <div class="conflicts">
-            ${conflicts.length ? conflicts.map((item) => `<span class="chip">${item}</span>`).join("") : `<span class="chip">No conflicts</span>`}
-          </div>
-        </article>
-      `;
+function buildDateCandidates(starts, people, length) {
+  return starts.flatMap((date) =>
+    slots.map((slot) => {
+      const conflicts = conflictsForSlot(date, slot, length, people);
+      const specials = specialSlotsForWindow(date, slot, length);
+      const isWeekend = isWeekendSlot(date, slot, length);
+      return {
+        date,
+        slot,
+        conflicts,
+        indicators: pickIndicators(date, slot, length),
+        isWeekend,
+        specials,
+        climate: averageClimateForWindow(date, length),
+        score: scoreFor(conflicts, people.length),
+        ootCount: uniqueConflicts(conflicts).length
+      };
     })
-    .join("");
+  );
+}
+
+function defaultCandidateSort(a, b) {
+  return (
+    b.score - a.score ||
+    a.ootCount - b.ootCount ||
+    a.date - b.date ||
+    slots.indexOf(a.slot) - slots.indexOf(b.slot)
+  );
+}
+
+function renderDateSearch(candidates, peopleCount, length) {
+  const filtered = filterDateCandidates(candidates);
+  filtered.sort(candidateSortFor(els.sortDates.value));
+
+  els.dateResultCount.textContent = `${filtered.length} ${filtered.length === 1 ? "match" : "matches"}`;
+  els.dateResults.innerHTML = filtered.length
+    ? filtered.slice(0, 24).map((pick) => dateCandidateMarkup(pick, peopleCount, length)).join("")
+    : `
+      <div class="date-results__empty">
+        <strong>No matching dates</strong>
+        <span>Loosen the filters or expand the date range.</span>
+      </div>
+    `;
+}
+
+function filterDateCandidates(candidates) {
+  const maxOot = els.maxOot.value === "" ? null : Number(els.maxOot.value);
+  const minTemp = els.minTemp.value === "" ? null : Number(els.minTemp.value);
+  const dayType = els.dayTypeFilter.value;
+  const specialFilter = els.specialFilter.value;
+  const selectedDays = checkedValues(els.dayFilters);
+  const selectedSlots = checkedValues(els.slotFilters);
+
+  return candidates.filter((item) => {
+    const temp = item.climate?.average ?? null;
+    if (maxOot !== null && item.ootCount > maxOot) return false;
+    if (minTemp !== null && (temp === null || temp < minTemp)) return false;
+    if (!selectedDays.has(String(item.date.getDay()))) return false;
+    if (!selectedSlots.has(item.slot.id)) return false;
+    if (dayType === "weekend" && !item.isWeekend) return false;
+    if (dayType === "weekday" && item.isWeekend) return false;
+    if (specialFilter === "with" && !item.specials.length) return false;
+    if (specialFilter === "without" && item.specials.length) return false;
+    return true;
+  });
+}
+
+function checkedValues(inputs) {
+  return new Set([...inputs].filter((input) => input.checked).map((input) => input.value));
+}
+
+function candidateSortFor(sortKey) {
+  const fallback = defaultCandidateSort;
+  return (a, b) => {
+    switch (sortKey) {
+      case "temp-warm":
+        return climateSortValue(b) - climateSortValue(a) || fallback(a, b);
+      case "temp-cool":
+        return climateSortValue(a) - climateSortValue(b) || fallback(a, b);
+      case "date-early":
+        return a.date - b.date || slots.indexOf(a.slot) - slots.indexOf(b.slot) || fallback(a, b);
+      case "special-first":
+        return Number(Boolean(b.specials.length)) - Number(Boolean(a.specials.length)) || fallback(a, b);
+      case "weekend-first":
+        return Number(b.isWeekend) - Number(a.isWeekend) || fallback(a, b);
+      case "oot-low":
+      default:
+        return a.ootCount - b.ootCount || fallback(a, b);
+    }
+  };
+}
+
+function climateSortValue(item) {
+  return item.climate?.average ?? -Infinity;
+}
+
+function dateCandidateMarkup(pick, peopleCount, length) {
+  const conflicts = uniqueConflicts(pick.conflicts);
+  const level = levelFor(pick.conflicts);
+  const className = level === 3 ? "is-bad" : level === 2 ? "is-captain" : level === 1 ? "is-warn" : "";
+  const label = dateLabel(pick.date, length);
+  return `
+    <article class="date-result ${className}">
+      <div class="date-result__head">
+        <div>
+          <strong class="date-result__date">${label}</strong>
+          <span class="date-result__slot">${pick.slot.name} &middot; ${pick.slot.timeLabel}</span>
+        </div>
+        <button class="ghost-button date-result__select" type="button" data-date-jump="${toKey(pick.date)}">View</button>
+      </div>
+      <div class="date-result__meta">
+        ${averageClimateMarkup(pick.climate)}
+        <span class="metric">${pick.ootCount} OOT</span>
+        <span class="metric">${pick.isWeekend ? "Weekend" : "Weekday"}</span>
+      </div>
+      ${indicatorMarkup(pick.indicators)}
+      ${specialsMarkup(pick.specials)}
+      <span class="date-result__score">${pick.score}/${peopleCount} available</span>
+      <div class="conflicts">
+        ${conflicts.length ? conflicts.map((item) => `<span class="chip">${escapeHtml(item)}</span>`).join("") : `<span class="chip chip--clear">No conflicts</span>`}
+      </div>
+    </article>
+  `;
 }
 
 function uniqueConflicts(conflicts) {
@@ -486,10 +573,26 @@ function climateShortLabel(date) {
   return `${Math.round(climate.average)}F`;
 }
 
+function averageClimateForWindow(date, length) {
+  const climates = Array.from({ length }, (_, index) => climateForDate(addDays(date, index))).filter(Boolean);
+  if (!climates.length) return null;
+  return {
+    average: climates.reduce((total, item) => total + item.average, 0) / climates.length,
+    precipitation: climates.reduce((total, item) => total + item.precipitation, 0) / climates.length
+  };
+}
+
 function climateMarkup(date) {
   const label = climateLabel(date);
   if (!label) return "";
   return `<span class="climate-chip" title="Chicago normal weather from NWS, 1991-2020">${escapeHtml(label)}</span>`;
+}
+
+function averageClimateMarkup(climate) {
+  if (!climate) return "";
+  const label = `${formatNumber(climate.average)}F avg`;
+  const title = `${formatNumber(climate.average)}F average temp - ${climate.precipitation.toFixed(2)} in average daily precip`;
+  return `<span class="climate-chip" title="${escapeHtml(title)}">${escapeHtml(label)}</span>`;
 }
 
 function formatNumber(value) {
@@ -508,6 +611,18 @@ function indicatorMarkup(indicators) {
 function specialSlotsForDate(date) {
   const dateKey = typeof date === "string" ? date : toKey(date);
   return specialSlots.filter((item) => item.date === dateKey);
+}
+
+function specialSlotsForWindow(date, slot, length) {
+  const event = slotWindow(date, slot, length);
+  const startKey = toKey(event.start);
+  const endKey = toKey(event.end);
+  return specialSlots.filter((item) => {
+    if (item.date < startKey || item.date > endKey) return false;
+    const window = specialWindow(item);
+    if (!window) return true;
+    return window.start < event.end && window.end > event.start;
+  });
 }
 
 function specialWindow(item) {
@@ -546,6 +661,15 @@ function specialTimeLabel(item) {
   if (!item.startTime) return "All Day";
   if (!item.endTime) return timeLabel(item.startTime);
   return `${timeLabel(item.startTime)}-${timeLabel(item.endTime)}`;
+}
+
+function specialsMarkup(specials) {
+  if (!specials.length) return "";
+  return `
+    <div class="date-result__specials">
+      ${specials.map((item) => `<span title="${escapeHtml(specialTimeLabel(item))}">${escapeHtml(item.title)}</span>`).join("")}
+    </div>
+  `;
 }
 
 function renderSpecialSummary() {
@@ -970,7 +1094,25 @@ function boot() {
     selectedDateKey = day.dataset.date;
     renderPlanner();
   });
-  [els.startDate, els.endDate, els.eventLength, els.weekendsOnly].forEach((el) => {
+  els.dateResults.addEventListener("click", (event) => {
+    const button = event.target.closest("[data-date-jump]");
+    if (!button) return;
+    selectedDateKey = button.dataset.dateJump;
+    renderPlanner();
+    els.dateDetail.scrollIntoView({ behavior: "smooth", block: "start" });
+  });
+  [
+    els.startDate,
+    els.endDate,
+    els.eventLength,
+    els.sortDates,
+    els.maxOot,
+    els.dayTypeFilter,
+    els.specialFilter,
+    els.minTemp,
+    ...els.dayFilters,
+    ...els.slotFilters
+  ].forEach((el) => {
     el.addEventListener("input", renderPlanner);
   });
   renderPlanner();

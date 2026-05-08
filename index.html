@@ -40,10 +40,6 @@
               <option value="4">4 days</option>
             </select>
           </div>
-          <label class="toggle">
-            <input id="weekendsOnly" type="checkbox" checked>
-            <span>Weekends only</span>
-          </label>
           <div class="people" id="peopleFilters" aria-label="People"></div>
         </aside>
 
@@ -68,14 +64,100 @@
             <div class="calendar" id="calendar"></div>
           </section>
 
-          <section class="best-section" aria-labelledby="bestPicksTitle">
+          <section class="date-search-section" aria-labelledby="dateSearchTitle">
             <div class="section-head">
               <div>
-                <p class="eyebrow">Best Picks</p>
-                <h2 id="bestPicksTitle">Lowest-conflict event slots</h2>
+                <p class="eyebrow">Date Search</p>
+                <h2 id="dateSearchTitle">Sort and filter event slots</h2>
               </div>
+              <span class="result-count" id="dateResultCount">0 matches</span>
             </div>
-            <div class="best-list" id="bestList"></div>
+            <div class="date-search-controls" aria-label="Date sorting and filters">
+              <div class="field-row">
+                <label for="sortDates">Sort by</label>
+                <select id="sortDates">
+                  <option value="oot-low">Fewest OOT</option>
+                  <option value="temp-warm">Warmest average temp</option>
+                  <option value="temp-cool">Coolest average temp</option>
+                  <option value="date-early">Earliest date</option>
+                  <option value="special-first">Special dates first</option>
+                  <option value="weekend-first">Weekend slots first</option>
+                </select>
+              </div>
+              <div class="field-row">
+                <label for="maxOot">Max OOT</label>
+                <select id="maxOot">
+                  <option value="">Any</option>
+                  <option value="0">0 OOT</option>
+                  <option value="1">1 OOT</option>
+                  <option value="2">2 OOT</option>
+                  <option value="3">3 OOT</option>
+                </select>
+              </div>
+              <div class="field-row">
+                <label for="dayTypeFilter">Day type</label>
+                <select id="dayTypeFilter">
+                  <option value="all">Weekend or weekday</option>
+                  <option value="weekend">Weekend slots</option>
+                  <option value="weekday">Weekday slots</option>
+                </select>
+              </div>
+              <div class="field-row">
+                <label for="specialFilter">Special dates</label>
+                <select id="specialFilter">
+                  <option value="all">With or without</option>
+                  <option value="with">Specials only</option>
+                  <option value="without">No specials</option>
+                </select>
+              </div>
+              <div class="field-row">
+                <label for="minTemp">Min avg temp</label>
+                <input id="minTemp" type="text" inputmode="numeric" pattern="[0-9]*" placeholder="Any">
+              </div>
+              <fieldset class="toggle-group toggle-group--wide" aria-label="Days of week">
+                <legend>Days</legend>
+                <label>
+                  <input type="checkbox" name="dayFilter" value="0" checked>
+                  <span>Sun</span>
+                </label>
+                <label>
+                  <input type="checkbox" name="dayFilter" value="1" checked>
+                  <span>Mon</span>
+                </label>
+                <label>
+                  <input type="checkbox" name="dayFilter" value="2" checked>
+                  <span>Tue</span>
+                </label>
+                <label>
+                  <input type="checkbox" name="dayFilter" value="3" checked>
+                  <span>Wed</span>
+                </label>
+                <label>
+                  <input type="checkbox" name="dayFilter" value="4" checked>
+                  <span>Thu</span>
+                </label>
+                <label>
+                  <input type="checkbox" name="dayFilter" value="5" checked>
+                  <span>Fri</span>
+                </label>
+                <label>
+                  <input type="checkbox" name="dayFilter" value="6" checked>
+                  <span>Sat</span>
+                </label>
+              </fieldset>
+              <fieldset class="toggle-group" aria-label="Slots">
+                <legend>Slots</legend>
+                <label>
+                  <input type="checkbox" name="slotFilter" value="morning" checked>
+                  <span>AM</span>
+                </label>
+                <label>
+                  <input type="checkbox" name="slotFilter" value="evening" checked>
+                  <span>PM</span>
+                </label>
+              </fieldset>
+            </div>
+            <div class="date-results" id="dateResults"></div>
           </section>
         </section>
       </section>

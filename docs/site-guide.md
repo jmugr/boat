@@ -30,7 +30,7 @@ Evening slots cross midnight, so an evening slot on July 23 runs from `2026-07-2
 
 Daily Chicago normal average temperature and precipitation are stored in `app.js` in the `climateNormals` object for May through October.
 
-The values are National Weather Service Chicago normals for 1991-2020. The app displays them on calendar days, selected-date details, Best Picks cards, and calendar day tooltips.
+The values are National Weather Service Chicago normals for 1991-2020. The app displays them on calendar days, selected-date details, Date Search result cards, and calendar day tooltips.
 
 Most OOT ranges are date-only ranges and block the full calendar day. That means someone marked OOT on July 24 blocks both the morning and evening slots on July 24, without spilling into July 23's evening slot.
 
@@ -189,7 +189,7 @@ Calendar days use the highest severity from that day's two slots as the day back
 
 If anyone is OOT on a calendar day, the day header shows a compact `N OOT` count next to the date number. The count is unique people across that day's AM and PM slots, so a person OOT for both slots is counted once.
 
-Weekend slot indicators appear on slot markers and in the Best Picks cards. A weekend slot is any slot that overlaps Saturday, Sunday, or Friday after `5pm`, so Friday PM is considered a weekend slot.
+Weekend slot indicators appear on slot markers and in the Date Search result cards. A weekend slot is any slot that overlaps Saturday, Sunday, or Friday after `5pm`, so Friday PM is considered a weekend slot.
 
 The legend labels are:
 
@@ -209,26 +209,27 @@ The CSS colors are implemented with `.day[data-level="0"]` behavior through the 
 - `.day[data-level="2"]`: orange
 - `.day[data-level="3"]`: red
 
-## Best Picks
+## Date Search
 
-The Best Picks section ranks candidate event slots by the number of selected people available.
+The Date Search section lists candidate event slots and lets you sort and filter them.
 
-Ranking flow:
+Candidate flow:
 
 1. Build candidate dates from the selected start/end range.
-2. Optionally limit candidates to weekends.
-3. Expand each candidate date into morning and evening slots.
-4. For each slot, check whether the slot window overlaps any OOT range.
-5. Score the slot as selected people minus unavailable people.
-6. Sort by best score, then fewest conflicts, then earliest date, then morning before evening.
+2. Expand each candidate date into morning and evening slots.
+3. For each slot, check whether the slot window overlaps any OOT range.
+4. Score the slot as selected people minus unavailable people.
+5. Attach average temperature, OOT count, special-date overlap, and weekend/weekday status.
 
-The top nine candidate slots are shown. Each card displays the date, the slot name, the slot time window, availability, and conflicts.
+The section can sort by fewest OOT, warmest or coolest average temperature, earliest date, special dates first, or weekend slots first.
+
+Filters include max OOT, weekend versus weekday, individual days of the week, AM/PM slots, special dates, and minimum average temperature. Each card displays the date, slot name, time window, average temp, OOT count, weekend/weekday status, specials, availability, and conflicts.
 
 OOT ranges are stored as inclusive dates. For date-only ranges, overlap checks use calendar-day comparison so all listed OOT dates block the full day only. This keeps date-only OOTs from leaking into neighboring overnight slots. PM-only entries use slot-window overlap checks.
 
 ## Filters
 
-The left-side people checkboxes let you include or exclude people from the ranking and calendar conflict calculation. The source data remains unchanged.
+The left-side people checkboxes let you include or exclude people from Date Search and calendar conflict calculation. The source data remains unchanged.
 
 ## Browser Storage
 
