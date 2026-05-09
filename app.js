@@ -88,7 +88,6 @@ const els = {
   endDate: document.querySelector("#endDate"),
   eventLength: document.querySelector("#eventLength"),
   sortDates: document.querySelector("#sortDates"),
-  maxOot: document.querySelector("#maxOot"),
   dayTypeFilter: document.querySelector("#dayTypeFilter"),
   specialFilter: document.querySelector("#specialFilter"),
   minTemp: document.querySelector("#minTemp"),
@@ -103,7 +102,6 @@ const els = {
   dateDetail: document.querySelector("#dateDetail"),
   boatReserved: document.querySelector("#boatReserved"),
   specialSummary: document.querySelector("#specialSummary"),
-  otherReservedSummary: document.querySelector("#otherReservedSummary"),
   sourceGrid: document.querySelector("#sourceGrid")
 };
 
@@ -186,21 +184,45 @@ const climateNormals = {
   ]
 };
 const boatReservations = [
+  boatReservation("2026-07-01", "evening"),
   boatReservation("2026-07-10", "evening"),
   boatReservation("2026-07-25", "morning"),
   boatReservation("2026-08-13", "evening"),
   boatReservation("2026-09-03", "evening"),
-  boatReservation("2026-09-10", "evening")
+  boatReservation("2026-09-10", "morning"),
+  boatReservation("2026-09-10", "evening"),
+  boatReservation("2026-09-11", "morning"),
+  boatReservation("2026-09-11", "evening"),
+  boatReservation("2026-09-12", "morning")
 ];
 const otherReservations = [
+  otherReservation("2026-05-30", "morning"),
+  otherReservation("2026-05-31", "morning"),
   otherReservation("2026-06-04", "morning", "Maintenance"),
+  otherReservation("2026-06-04", "evening"),
+  otherReservation("2026-06-09", "morning"),
+  otherReservation("2026-06-10", "morning"),
+  otherReservation("2026-06-10", "evening"),
+  otherReservation("2026-06-11", "evening"),
   otherReservation("2026-06-12", "morning", "Maintenance"),
   otherReservation("2026-06-15", "morning", "Maintenance"),
+  otherReservation("2026-06-15", "evening"),
+  otherReservation("2026-06-18", "evening"),
+  otherReservation("2026-06-20", "morning"),
+  otherReservation("2026-06-21", "morning"),
+  otherReservation("2026-06-21", "evening"),
   otherReservation("2026-06-23", "morning", "Maintenance"),
+  otherReservation("2026-06-25", "evening"),
   otherReservation("2026-07-01", "morning", "Maintenance"),
   otherReservation("2026-07-02", "evening"),
+  otherReservation("2026-07-03", "morning"),
+  otherReservation("2026-07-06", "evening"),
+  otherReservation("2026-07-07", "evening"),
   otherReservation("2026-07-09", "morning", "Maintenance"),
+  otherReservation("2026-07-09", "evening"),
+  otherReservation("2026-07-10", "morning"),
   otherReservation("2026-07-11", "morning"),
+  otherReservation("2026-07-11", "evening"),
   otherReservation("2026-07-12", "morning"),
   otherReservation("2026-07-12", "evening"),
   otherReservation("2026-07-13", "morning"),
@@ -212,9 +234,22 @@ const otherReservations = [
   otherReservation("2026-07-16", "morning"),
   otherReservation("2026-07-16", "evening"),
   otherReservation("2026-07-17", "morning"),
+  otherReservation("2026-07-18", "morning"),
+  otherReservation("2026-07-18", "evening"),
+  otherReservation("2026-07-19", "morning"),
   otherReservation("2026-07-20", "morning", "Maintenance"),
   otherReservation("2026-07-21", "evening"),
+  otherReservation("2026-07-22", "evening"),
+  otherReservation("2026-07-23", "evening"),
+  otherReservation("2026-07-24", "morning"),
+  otherReservation("2026-07-24", "evening"),
+  otherReservation("2026-07-25", "evening"),
+  otherReservation("2026-07-26", "morning"),
   otherReservation("2026-07-28", "morning", "Maintenance"),
+  otherReservation("2026-07-30", "evening"),
+  otherReservation("2026-08-01", "morning"),
+  otherReservation("2026-08-02", "morning"),
+  otherReservation("2026-08-04", "evening"),
   otherReservation("2026-08-05", "morning", "Maintenance"),
   otherReservation("2026-08-06", "morning"),
   otherReservation("2026-08-06", "evening"),
@@ -222,12 +257,18 @@ const otherReservations = [
   otherReservation("2026-08-07", "evening"),
   otherReservation("2026-08-08", "morning"),
   otherReservation("2026-08-13", "morning", "Maintenance"),
+  otherReservation("2026-08-14", "morning"),
+  otherReservation("2026-08-15", "morning"),
+  otherReservation("2026-08-16", "morning"),
+  otherReservation("2026-08-20", "evening"),
   otherReservation("2026-08-21", "morning", "Maintenance"),
   otherReservation("2026-08-22", "morning"),
   otherReservation("2026-08-24", "morning", "Maintenance"),
+  otherReservation("2026-08-25", "evening"),
   otherReservation("2026-08-27", "evening"),
   otherReservation("2026-09-01", "morning", "Maintenance"),
   otherReservation("2026-09-09", "morning", "Maintenance"),
+  otherReservation("2026-09-12", "evening"),
   otherReservation("2026-09-16", "morning"),
   otherReservation("2026-09-17", "morning"),
   otherReservation("2026-09-17", "evening"),
@@ -474,26 +515,29 @@ function renderPlanner() {
   }
 
   const people = selectedPeople();
+  const calendarPeople = planner.people;
   const length = Number(els.eventLength.value);
   const starts = candidateStarts(els.startDate.value, els.endDate.value, length);
-  const candidates = buildDateCandidates(starts, people, length, candidateEndDate(els.endDate.value, length));
+  const candidates = buildDateCandidates(starts, people, calendarPeople, length, candidateEndDate(els.endDate.value, length));
   const dateResults = visibleDateResults(candidates);
-  renderDateSearch(dateResults, people.length, length);
-  renderCalendar(people, searchResultSlotKeys(dateResults.visible, length));
-  renderDateDetail(people);
-  renderBoatReserved(people);
+  renderDateSearch(dateResults, calendarPeople.length, length);
+  renderCalendar(calendarPeople, searchResultSlotKeys(dateResults.visible, length));
+  renderDateDetail(calendarPeople);
+  renderBoatReserved(calendarPeople);
   renderSpecialSummary();
-  renderOtherReservedSummary();
 }
 
 function candidateEndDate(end, length) {
   return length > 1 ? minDateKey(end, extendedWatersEnd) : end;
 }
 
-function buildDateCandidates(starts, people, length, end) {
+function buildDateCandidates(starts, requiredPeople, displayPeople, length, end) {
   return starts.flatMap((date) =>
-    slots.filter((slot) => sequenceFitsRange(date, slot, length, end) && !isReservedCandidate(date, slot, length)).map((slot) => {
-      const conflicts = conflictsForSlot(date, slot, length, people);
+    slots.flatMap((slot) => {
+      if (!sequenceFitsRange(date, slot, length, end) || isReservedCandidate(date, slot, length)) return [];
+      const requiredConflicts = conflictsForSlot(date, slot, length, requiredPeople);
+      if (requiredConflicts.length) return [];
+      const conflicts = conflictsForSlot(date, slot, length, displayPeople);
       const specials = specialSlotsForWindow(date, slot, length);
       const isWeekend = isWeekendSlot(date, slot, length);
       return {
@@ -504,7 +548,7 @@ function buildDateCandidates(starts, people, length, end) {
         isWeekend,
         specials,
         climate: averageClimateForWindow(date, slot, length),
-        score: scoreFor(conflicts, people.length),
+        score: scoreFor(conflicts, displayPeople.length),
         ootCount: uniqueConflicts(conflicts).length
       };
     })
@@ -562,7 +606,6 @@ function renderDateSearch(results, peopleCount, length) {
 }
 
 function filterDateCandidates(candidates) {
-  const maxOot = els.maxOot.value === "" ? null : Number(els.maxOot.value);
   const minTemp = els.minTemp.value === "" ? null : Number(els.minTemp.value);
   const dayType = els.dayTypeFilter.value;
   const specialFilter = els.specialFilter.value;
@@ -572,7 +615,6 @@ function filterDateCandidates(candidates) {
 
   return candidates.filter((item) => {
     const temp = item.climate?.average ?? null;
-    if (maxOot !== null && item.ootCount > maxOot) return false;
     if (minTemp !== null && (temp === null || temp < minTemp)) return false;
     if (!selectedDays.has(String(item.date.getDay()))) return false;
     if (!selectedMonths.has(String(item.date.getMonth() + 1))) return false;
@@ -867,27 +909,6 @@ function renderBoatReserved(people) {
   `;
 }
 
-function renderOtherReservedSummary() {
-  const sorted = [...otherReservations].sort((a, b) => a.date.localeCompare(b.date) || slotOrder(a.slotId) - slotOrder(b.slotId));
-
-  els.otherReservedSummary.innerHTML = `
-    <div class="special-summary__head">
-      <p class="eyebrow">Reserved By Other Groups</p>
-      <strong>${sorted.length} slots</strong>
-    </div>
-    <ul class="other-reserved-summary__list">
-      ${sorted.map((item) => `<li>${escapeHtml(otherReservationLabel(item))}</li>`).join("")}
-    </ul>
-  `;
-}
-
-function otherReservationLabel(item) {
-  const slot = slots.find((candidate) => candidate.id === item.slotId);
-  const slotLabel = slot ? slot.name : item.slotId;
-  const note = item.note ? ` - ${item.note}` : "";
-  return `${fullDateWithYear.format(parseDate(item.date))}: ${slotLabel}${note}`;
-}
-
 function slotOrder(slotId) {
   const index = slots.findIndex((item) => item.id === slotId);
   return index === -1 ? slots.length : index;
@@ -990,11 +1011,12 @@ function monthMarkup(month, people, start, end, searchResultSlots) {
         isSearchResult: searchResultSlots.has(`${dateKey}|${slot.id}`)
       };
     });
+    const fullyBoatReserved = daySlots.every((item) => item.isReserved);
     const fullyReserved = daySlots.every((item) => item.isReserved || item.isOtherReserved);
     const level = fullyReserved ? "reserved" : Math.max(...daySlots.map((item) => item.level));
     const ootCount = uniqueConflicts(daySlots.flatMap((item) => item.conflicts)).length;
     return `
-      <button class="day" data-date="${dateKey}" data-level="${level}" data-special-date="${fullyReserved ? false : specialOnDate}" data-fully-reserved="${fullyReserved}" aria-pressed="${dateKey === selectedDateKey}" title="${dayTooltipFor(date, daySlots, people.length, specials)}">
+      <button class="day" data-date="${dateKey}" data-level="${level}" data-special-date="${fullyReserved ? false : specialOnDate}" data-fully-reserved="${fullyReserved}" data-fully-boat-reserved="${fullyBoatReserved}" aria-pressed="${dateKey === selectedDateKey}" title="${dayTooltipFor(date, daySlots, people.length, specials)}">
         <span class="day__head">
           <strong>${date.getDate()}</strong>
           ${ootCount ? `<span class="day__oot-count">${ootCount} OOT</span>` : ""}
@@ -1398,7 +1420,6 @@ function boot() {
     els.endDate,
     els.eventLength,
     els.sortDates,
-    els.maxOot,
     els.dayTypeFilter,
     els.specialFilter,
     els.minTemp,
