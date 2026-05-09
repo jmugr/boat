@@ -17,7 +17,8 @@ const planner = {
       ranges: [
         range("2026-07-04", "2026-07-04", "July 4th"),
         range("2026-07-17", "2026-07-19", "July 17th weekend"),
-        range("2026-07-31", "2026-08-09", "7/31-8/9")
+        range("2026-07-31", "2026-08-09", "7/31-8/9"),
+        range("2026-08-20", "2026-08-23")
       ]
     },
     {
@@ -100,10 +101,8 @@ const els = {
   dateDetail: document.querySelector("#dateDetail"),
   boatReserved: document.querySelector("#boatReserved"),
   specialSummary: document.querySelector("#specialSummary"),
-  sourceGrid: document.querySelector("#sourceGrid"),
-  trackedPeople: document.querySelector("#trackedPeople"),
-  trackedDates: document.querySelector("#trackedDates"),
-  bestScore: document.querySelector("#bestScore")
+  otherReservedSummary: document.querySelector("#otherReservedSummary"),
+  sourceGrid: document.querySelector("#sourceGrid")
 };
 
 const storageKey = "my-way-planner-oots-v1";
@@ -113,6 +112,7 @@ let selectedDateKey = null;
 const monthNames = new Intl.DateTimeFormat("en-US", { month: "long", year: "numeric" });
 const compactDate = new Intl.DateTimeFormat("en-US", { month: "short", day: "numeric" });
 const fullDate = new Intl.DateTimeFormat("en-US", { weekday: "long", month: "long", day: "numeric" });
+const fullDateWithYear = new Intl.DateTimeFormat("en-US", { weekday: "long", month: "long", day: "numeric", year: "numeric" });
 const weekday = new Intl.DateTimeFormat("en-US", { weekday: "short" });
 const dayNames = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 const slots = [
@@ -188,6 +188,48 @@ const boatReservations = [
   boatReservation("2026-09-03", "evening"),
   boatReservation("2026-09-10", "evening")
 ];
+const otherReservations = [
+  otherReservation("2026-06-04", "morning", "Maintenance"),
+  otherReservation("2026-06-12", "morning", "Maintenance"),
+  otherReservation("2026-06-15", "morning", "Maintenance"),
+  otherReservation("2026-06-23", "morning", "Maintenance"),
+  otherReservation("2026-07-01", "morning", "Maintenance"),
+  otherReservation("2026-07-02", "evening"),
+  otherReservation("2026-07-09", "morning", "Maintenance"),
+  otherReservation("2026-07-11", "morning"),
+  otherReservation("2026-07-12", "morning"),
+  otherReservation("2026-07-12", "evening"),
+  otherReservation("2026-07-13", "morning"),
+  otherReservation("2026-07-13", "evening"),
+  otherReservation("2026-07-14", "evening"),
+  otherReservation("2026-07-15", "morning"),
+  otherReservation("2026-07-15", "evening"),
+  otherReservation("2026-07-16", "morning"),
+  otherReservation("2026-07-16", "evening"),
+  otherReservation("2026-07-17", "morning"),
+  otherReservation("2026-07-20", "morning", "Maintenance"),
+  otherReservation("2026-07-28", "morning", "Maintenance"),
+  otherReservation("2026-08-05", "morning", "Maintenance"),
+  otherReservation("2026-08-06", "morning"),
+  otherReservation("2026-08-06", "evening"),
+  otherReservation("2026-08-07", "morning"),
+  otherReservation("2026-08-07", "evening"),
+  otherReservation("2026-08-13", "morning", "Maintenance"),
+  otherReservation("2026-08-21", "morning", "Maintenance"),
+  otherReservation("2026-08-22", "morning"),
+  otherReservation("2026-08-24", "morning", "Maintenance"),
+  otherReservation("2026-08-27", "evening"),
+  otherReservation("2026-09-01", "morning", "Maintenance"),
+  otherReservation("2026-09-09", "morning", "Maintenance"),
+  otherReservation("2026-09-17", "morning"),
+  otherReservation("2026-09-17", "evening"),
+  otherReservation("2026-09-18", "morning"),
+  otherReservation("2026-09-18", "evening"),
+  otherReservation("2026-09-25", "morning", "Maintenance"),
+  otherReservation("2026-09-28", "morning", "Maintenance"),
+  otherReservation("2026-10-06", "morning", "Maintenance"),
+  otherReservation("2026-10-14", "morning", "Maintenance")
+];
 const specialSlots = [
   specialSlot("2026-07-10", "17:00", null, "Chris Lake Navy Pier Open Air"),
   specialSlot("2026-07-11", "17:00", null, "Chris Lake Navy Pier Open Air"),
@@ -219,6 +261,10 @@ function slotRange(date, slotId) {
 
 function boatReservation(date, slotId) {
   return { date, slotId };
+}
+
+function otherReservation(date, slotId, note = "") {
+  return { date, slotId, note };
 }
 
 function specialSlot(date, startTime, endTime, title) {
@@ -379,21 +425,17 @@ function renderPlanner() {
   const length = Number(els.eventLength.value);
   const starts = candidateStarts(els.startDate.value, els.endDate.value, length);
   const candidates = buildDateCandidates(starts, people, length);
-  const ranked = [...candidates].sort(defaultCandidateSort);
-
   renderDateSearch(candidates, people.length, length);
   renderCalendar(people);
   renderDateDetail(people);
   renderBoatReserved(people);
   renderSpecialSummary();
-
-  const best = ranked[0]?.score ?? 0;
-  els.bestScore.textContent = `${best}/${people.length}`;
+  renderOtherReservedSummary();
 }
 
 function buildDateCandidates(starts, people, length) {
   return starts.flatMap((date) =>
-    slots.map((slot) => {
+    slots.filter((slot) => !isReservedCandidate(date, slot, length)).map((slot) => {
       const conflicts = conflictsForSlot(date, slot, length, people);
       const specials = specialSlotsForWindow(date, slot, length);
       const isWeekend = isWeekendSlot(date, slot, length);
@@ -410,6 +452,16 @@ function buildDateCandidates(starts, people, length) {
       };
     })
   );
+}
+
+function isReservedCandidate(date, slot, length) {
+  const event = slotWindow(date, slot, length);
+  return [...boatReservations, ...otherReservations].some((item) => {
+    const reservedSlot = slots.find((candidate) => candidate.id === item.slotId);
+    if (!reservedSlot) return false;
+    const reserved = slotWindow(parseDate(item.date), reservedSlot, 1);
+    return event.start < reserved.end && reserved.start < event.end;
+  });
 }
 
 function defaultCandidateSort(a, b) {
@@ -506,7 +558,7 @@ function dateCandidateMarkup(pick, peopleCount, length) {
         <span class="metric">${pick.ootCount} OOT</span>
         <span class="metric">${pick.isWeekend ? "Weekend" : "Weekday"}</span>
       </div>
-      ${indicatorMarkup(pick.indicators)}
+      ${indicatorMarkup(pick.indicators.filter((indicator) => indicator.type !== "weekend"))}
       ${specialsMarkup(pick.specials)}
       <span class="date-result__score">${pick.score}/${peopleCount} available</span>
       <div class="conflicts">
@@ -643,6 +695,11 @@ function boatReservationsForDate(date) {
   return boatReservations.filter((item) => item.date === dateKey);
 }
 
+function otherReservationsForDate(date) {
+  const dateKey = typeof date === "string" ? date : toKey(date);
+  return otherReservations.filter((item) => item.date === dateKey);
+}
+
 function specialWindow(item) {
   if (!item.startTime) return null;
   const date = parseDate(item.date);
@@ -727,6 +784,27 @@ function renderBoatReserved(people) {
   `;
 }
 
+function renderOtherReservedSummary() {
+  const sorted = [...otherReservations].sort((a, b) => a.date.localeCompare(b.date) || slotOrder(a.slotId) - slotOrder(b.slotId));
+
+  els.otherReservedSummary.innerHTML = `
+    <div class="special-summary__head">
+      <p class="eyebrow">Reserved By Other Groups</p>
+      <strong>${sorted.length} slots</strong>
+    </div>
+    <ul class="other-reserved-summary__list">
+      ${sorted.map((item) => `<li>${escapeHtml(otherReservationLabel(item))}</li>`).join("")}
+    </ul>
+  `;
+}
+
+function otherReservationLabel(item) {
+  const slot = slots.find((candidate) => candidate.id === item.slotId);
+  const slotLabel = slot ? slot.name : item.slotId;
+  const note = item.note ? ` - ${item.note}` : "";
+  return `${fullDateWithYear.format(parseDate(item.date))}: ${slotLabel}${note}`;
+}
+
 function slotOrder(slotId) {
   const index = slots.findIndex((item) => item.id === slotId);
   return index === -1 ? slots.length : index;
@@ -809,8 +887,10 @@ function monthMarkup(month, people, start, end) {
     const climate = climateShortLabel(date);
     const specials = specialSlotsForDate(dateKey);
     const reservations = boatReservationsForDate(dateKey);
+    const otherReservedSlots = otherReservationsForDate(dateKey);
     const specialSlotIds = specialSlotIdsForDate(date, specials);
     const reservedSlotIds = new Set(reservations.map((item) => item.slotId));
+    const otherReservedSlotIds = new Set(otherReservedSlots.map((item) => item.slotId));
     const hasAllDaySpecial = specials.some((item) => !item.startTime);
     const specialOnDate = hasAllDaySpecial || (specials.length > 0 && specialSlotIds.size === 0);
     const daySlots = slots.map((slot) => {
@@ -822,7 +902,8 @@ function monthMarkup(month, people, start, end) {
         names: [...new Set(conflicts.map((item) => item.person.split(" ")[0]))],
         indicators: slotIndicators(date, slot, 1),
         isSpecial: specialSlotIds.has(slot.id),
-        isReserved: reservedSlotIds.has(slot.id)
+        isReserved: reservedSlotIds.has(slot.id),
+        isOtherReserved: otherReservedSlotIds.has(slot.id)
       };
     });
     const level = Math.max(...daySlots.map((item) => item.level));
@@ -892,6 +973,10 @@ function renderDateDetail(people) {
   }));
   const allConflicts = uniqueConflicts(daySlots.flatMap((item) => item.conflicts));
   const specials = specialSlotsForDate(selectedDateKey);
+  const reservations = [
+    ...boatReservationsForDate(selectedDateKey).map((item) => ({ ...item, type: "boat" })),
+    ...otherReservationsForDate(selectedDateKey).map((item) => ({ ...item, type: "other" }))
+  ].sort((a, b) => slotOrder(a.slotId) - slotOrder(b.slotId));
   const holidayNames = holidaysForWindow(date, 1);
 
   els.dateDetail.innerHTML = `
@@ -907,6 +992,7 @@ function renderDateDetail(people) {
     <div class="date-detail__summary">
       ${allConflicts.length ? allConflicts.map((name) => `<span class="chip">${escapeHtml(name)}</span>`).join("") : `<span class="chip chip--clear">No one OOT</span>`}
     </div>
+    ${reservations.length ? selectedDateReservationsMarkup(reservations) : ""}
     ${specials.length ? `
       <div class="date-detail__specials">
         <strong>Special slots</strong>
@@ -916,6 +1002,30 @@ function renderDateDetail(people) {
     <div class="date-detail__slots">
       ${ootDetailMarkup(daySlots, people.length)}
     </div>
+  `;
+}
+
+function selectedDateReservationsMarkup(reservations) {
+  return `
+    <div class="date-detail__reservations">
+      <strong>Reservations</strong>
+      ${reservations.map(reservationDetailMarkup).join("")}
+    </div>
+  `;
+}
+
+function reservationDetailMarkup(item) {
+  const slot = slots.find((candidate) => candidate.id === item.slotId);
+  const slotName = slot ? slot.name : item.slotId;
+  const slotTime = slot ? slot.timeLabel : "";
+  const typeLabel = item.type === "boat" ? "Boat reserved" : "Reserved by others";
+  const note = item.note ? ` - ${item.note}` : "";
+
+  return `
+    <article class="reservation-detail reservation-detail--${item.type}">
+      <span>${escapeHtml(slotName)}${slotTime ? ` &middot; ${escapeHtml(slotTime)}` : ""}</span>
+      <strong>${escapeHtml(typeLabel + note)}</strong>
+    </article>
   `;
 }
 
@@ -999,14 +1109,18 @@ function slotDetailMarkup(item, peopleCount) {
 }
 
 function slotMarkup(item) {
-  const title = item.isReserved
+  const title = item.isOtherReserved
+    ? "Reserved by another group"
+    : item.isReserved
     ? "Boat reserved"
     : item.indicators.map((indicator) => indicator.title).join(", ");
-  const marks = !item.isReserved && item.indicators.length
+  const marks = !item.isReserved && !item.isOtherReserved && item.indicators.length
     ? `<span class="slot-pill__marks">${item.indicators.map((indicator) => `<i data-type="${indicator.type}">${indicator.label[0]}</i>`).join("")}</span>`
     : "";
+  const level = item.isOtherReserved ? "other-reserved" : item.isReserved ? "reserved" : item.level;
+  const isSpecial = item.isOtherReserved ? false : item.isSpecial;
   return `
-    <span class="slot-pill" data-level="${item.isReserved ? "reserved" : item.level}" data-special-slot="${item.isSpecial}" data-reserved-slot="${item.isReserved}" title="${escapeHtml(title)}">
+    <span class="slot-pill" data-level="${level}" data-special-slot="${isSpecial}" data-reserved-slot="${item.isReserved}" data-other-reserved-slot="${item.isOtherReserved}" title="${escapeHtml(title)}">
       <span class="slot-pill__text">${item.slot.shortName}</span>
       ${marks}
     </span>
@@ -1038,23 +1152,28 @@ function dayTooltipFor(date, daySlots, peopleCount, specials = []) {
 function renderSource() {
   sortPeople();
   els.sourceGrid.innerHTML = planner.people
-    .map((person) => `
-      <article class="source-card">
-        <div class="source-card__head">
-          <h3>${escapeHtml(person.name)}</h3>
-          <span>${ootDayCount(person)} OOT days</span>
-        </div>
-        <ul>
-          ${person.ranges.length ? person.ranges.map((item) => `<li>${escapeHtml(sourceRangeLabel(item))}</li>`).join("") : "<li>No OOT dates yet</li>"}
-        </ul>
-      </article>
-    `)
+    .map(sourceCardMarkup)
     .join("");
+}
+
+function sourceCardMarkup(person) {
+  const ranges = sourceRangesInDefaultRange(person);
+  return `
+    <article class="source-card">
+      <div class="source-card__head">
+        <h3>${escapeHtml(person.name)}</h3>
+        <span>${ootDayCount(person)} OOT days</span>
+      </div>
+      <ul>
+        ${ranges.length ? ranges.map((item) => `<li>${escapeHtml(sourceRangeLabel(item))}</li>`).join("") : "<li>No OOT dates in default range</li>"}
+      </ul>
+    </article>
+  `;
 }
 
 function ootDayCount(person) {
   const days = new Set();
-  for (const item of person.ranges) {
+  for (const item of sourceRangesInDefaultRange(person)) {
     for (const day of eachDay(item.start, item.end)) {
       days.add(toKey(day));
     }
@@ -1062,9 +1181,17 @@ function ootDayCount(person) {
   return days.size;
 }
 
-function renderStats() {
-  els.trackedPeople.textContent = planner.people.length;
-  els.trackedDates.textContent = planner.people.reduce((total, person) => total + person.ranges.length, 0);
+function sourceRangesInDefaultRange(person) {
+  return person.ranges.map(clipRangeToDefaultRange).filter(Boolean);
+}
+
+function clipRangeToDefaultRange(item) {
+  const defaultStart = els.startDate.defaultValue;
+  const defaultEnd = els.endDate.defaultValue;
+  const start = parseDate(item.start) < parseDate(defaultStart) ? defaultStart : item.start;
+  const end = parseDate(item.end) > parseDate(defaultEnd) ? defaultEnd : item.end;
+  if (parseDate(start) > parseDate(end)) return null;
+  return { ...item, start, end };
 }
 
 function loadPlanner() {
@@ -1164,7 +1291,6 @@ function escapeHtml(value) {
 
 function boot() {
   loadPlanner();
-  renderStats();
   renderFilters();
   renderSource();
   els.peopleFilters.addEventListener("change", renderPlanner);
