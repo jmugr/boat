@@ -515,6 +515,10 @@ select {
   background: var(--holiday);
 }
 
+.indicator--value {
+  background: var(--teal);
+}
+
 .date-result__score {
   display: inline-block;
   margin-bottom: 12px;

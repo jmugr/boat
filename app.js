@@ -553,12 +553,16 @@ function buildDateCandidates(starts, requiredPeople, displayPeople, length, end)
       const conflicts = conflictsForSlot(date, slot, length, displayPeople);
       const specials = specialSlotsForWindow(date, slot, length);
       const isWeekend = isWeekendSlot(date, slot, length);
+      const isValue = isValueSlot(date, slot, length);
+      const isSaturdayTwo = isSaturdayTwoSlot(date, slot, length);
       return {
         date,
         slot,
         conflicts,
         indicators: pickIndicators(date, slot, length),
         isWeekend,
+        isValue,
+        isSaturdayTwo,
         specials,
         climate: averageClimateForWindow(date, slot, length),
         score: scoreFor(conflicts, displayPeople.length),
@@ -636,6 +640,10 @@ function filterDateCandidates(candidates) {
     if (!selectedMonths.has(String(item.date.getMonth() + 1))) return false;
     if (!selectedSlots.has(item.slot.id)) return false;
     if (dayType === "weekend" && !item.isWeekend) return false;
+    if (dayType === "weekend-value" && !item.isWeekend && !item.isValue) return false;
+    if (dayType === "value" && !item.isValue) return false;
+    if (dayType === "saturday-two" && !item.isSaturdayTwo) return false;
+    if (dayType === "value-saturday-two" && !item.isValue && !item.isSaturdayTwo) return false;
     if (dayType === "weekday" && item.isWeekend) return false;
     if (specialFilter === "with" && !item.specials.length) return false;
     if (specialFilter === "without" && item.specials.length) return false;
@@ -677,6 +685,7 @@ function dateCandidateMarkup(pick, peopleCount, length) {
   const level = levelFor(pick.conflicts);
   const className = level === 3 ? "is-bad" : level === 2 ? "is-captain" : level === 1 ? "is-warn" : "";
   const label = dateLabel(pick.date, pick.slot, length);
+  const indicators = pick.isValue ? [...pick.indicators, { type: "value", label: "Value", title: "Holiday or pre-holiday PM slot" }] : pick.indicators;
   return `
     <article class="date-result ${className}">
       <div class="date-result__head">
@@ -691,7 +700,7 @@ function dateCandidateMarkup(pick, peopleCount, length) {
         <span class="metric">${pick.ootCount} OOT</span>
         <span class="metric">${pick.isWeekend ? "Weekend" : "Weekday"}</span>
       </div>
-      ${indicatorMarkup(pick.indicators.filter((indicator) => indicator.type !== "weekend"))}
+      ${indicatorMarkup(indicators.filter((indicator) => indicator.type !== "weekend"))}
       ${specialsMarkup(pick.specials)}
       <span class="date-result__score">${pick.score}/${peopleCount} available</span>
       <div class="conflicts">
@@ -748,6 +757,17 @@ function isWeekendSlot(date, slot, length = 1) {
     if (dayOfWeek === 5 && event.end > dateAtHour(dayStart, 17) && event.start < dayEnd) return true;
   }
   return false;
+}
+
+function isValueSlot(date, slot, length = 1) {
+  if (isWeekendSlot(date, slot, length)) return false;
+  if (holidaysForWindow(date, slot, length).length) return true;
+  if (slot.id !== "evening" || length !== 1) return false;
+  return holidayLookup.has(toKey(addDays(date, 1)));
+}
+
+function isSaturdayTwoSlot(date, slot, length = 1) {
+  return length === 1 && date.getDay() === 0 && holidayLookup.has(toKey(addDays(date, 1)));
 }
 
 function holidaysForWindow(date, slot = slots[0], length = 1) {
