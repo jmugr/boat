@@ -60,10 +60,12 @@
               <div class="field-row">
                 <label for="eventLength">Length</label>
                 <select id="eventLength">
-                  <option value="1">1 day</option>
-                  <option value="2">2 days</option>
-                  <option value="3">3 days</option>
-                  <option value="4">4 days</option>
+                  <option value="1">1 slot</option>
+                  <option value="2">2 slots - Extended Waters only</option>
+                  <option value="3">3 slots - Extended Waters only</option>
+                  <option value="4">4 slots - Extended Waters only</option>
+                  <option value="5">5 slots - Extended Waters only</option>
+                  <option value="6">6 slots - Extended Waters only</option>
                 </select>
               </div>
               <div class="field-row">
@@ -136,6 +138,33 @@
                 <label>
                   <input type="checkbox" name="dayFilter" value="6" checked>
                   <span>Sat</span>
+                </label>
+              </fieldset>
+              <fieldset class="toggle-group toggle-group--wide" aria-label="Months">
+                <legend>Months</legend>
+                <label>
+                  <input type="checkbox" name="monthFilter" value="5" checked>
+                  <span>May</span>
+                </label>
+                <label>
+                  <input type="checkbox" name="monthFilter" value="6" checked>
+                  <span>Jun</span>
+                </label>
+                <label>
+                  <input type="checkbox" name="monthFilter" value="7" checked>
+                  <span>Jul</span>
+                </label>
+                <label>
+                  <input type="checkbox" name="monthFilter" value="8" checked>
+                  <span>Aug</span>
+                </label>
+                <label>
+                  <input type="checkbox" name="monthFilter" value="9" checked>
+                  <span>Sep</span>
+                </label>
+                <label>
+                  <input type="checkbox" name="monthFilter" value="10" checked>
+                  <span>Oct</span>
                 </label>
               </fieldset>
               <fieldset class="toggle-group" aria-label="Slots">

@@ -93,6 +93,7 @@ const els = {
   specialFilter: document.querySelector("#specialFilter"),
   minTemp: document.querySelector("#minTemp"),
   dayFilters: document.querySelectorAll("[name='dayFilter']"),
+  monthFilters: document.querySelectorAll("[name='monthFilter']"),
   slotFilters: document.querySelectorAll("[name='slotFilter']"),
   dateResultCount: document.querySelector("#dateResultCount"),
   peopleFilters: document.querySelector("#peopleFilters"),
@@ -106,6 +107,8 @@ const els = {
 };
 
 const storageKey = "my-way-planner-oots-v1";
+const extendedWatersStart = "2026-06-20";
+const extendedWatersEnd = "2026-09-20";
 const captains = new Set(["Joe", "Sean"]);
 const captainOrder = ["Joe", "Sean"];
 let selectedDateKey = null;
@@ -201,6 +204,7 @@ const otherReservations = [
   otherReservation("2026-07-12", "evening"),
   otherReservation("2026-07-13", "morning"),
   otherReservation("2026-07-13", "evening"),
+  otherReservation("2026-07-14", "morning"),
   otherReservation("2026-07-14", "evening"),
   otherReservation("2026-07-15", "morning"),
   otherReservation("2026-07-15", "evening"),
@@ -208,12 +212,14 @@ const otherReservations = [
   otherReservation("2026-07-16", "evening"),
   otherReservation("2026-07-17", "morning"),
   otherReservation("2026-07-20", "morning", "Maintenance"),
+  otherReservation("2026-07-21", "evening"),
   otherReservation("2026-07-28", "morning", "Maintenance"),
   otherReservation("2026-08-05", "morning", "Maintenance"),
   otherReservation("2026-08-06", "morning"),
   otherReservation("2026-08-06", "evening"),
   otherReservation("2026-08-07", "morning"),
   otherReservation("2026-08-07", "evening"),
+  otherReservation("2026-08-08", "morning"),
   otherReservation("2026-08-13", "morning", "Maintenance"),
   otherReservation("2026-08-21", "morning", "Maintenance"),
   otherReservation("2026-08-22", "morning"),
@@ -221,10 +227,12 @@ const otherReservations = [
   otherReservation("2026-08-27", "evening"),
   otherReservation("2026-09-01", "morning", "Maintenance"),
   otherReservation("2026-09-09", "morning", "Maintenance"),
+  otherReservation("2026-09-16", "morning"),
   otherReservation("2026-09-17", "morning"),
   otherReservation("2026-09-17", "evening"),
   otherReservation("2026-09-18", "morning"),
   otherReservation("2026-09-18", "evening"),
+  otherReservation("2026-09-19", "morning"),
   otherReservation("2026-09-25", "morning", "Maintenance"),
   otherReservation("2026-09-28", "morning", "Maintenance"),
   otherReservation("2026-10-06", "morning", "Maintenance"),
@@ -336,10 +344,40 @@ function eachDay(start, end) {
   return days;
 }
 
+function slotSequence(date, slot, length) {
+  const startIndex = slots.indexOf(slot);
+  if (startIndex === -1) return [];
+  return Array.from({ length }, (_, index) => {
+    const slotIndex = startIndex + index;
+    return {
+      date: addDays(date, Math.floor(slotIndex / slots.length)),
+      slot: slots[slotIndex % slots.length]
+    };
+  });
+}
+
+function sequenceSlotDates(date, slot, length) {
+  const seen = new Map();
+  for (const item of slotSequence(date, slot, length)) {
+    const dateKey = toKey(item.date);
+    if (!seen.has(dateKey)) seen.set(dateKey, item.date);
+  }
+  return [...seen.values()];
+}
+
+function sequenceFitsRange(date, slot, length, end) {
+  const sequence = slotSequence(date, slot, length);
+  const last = sequence.at(-1);
+  return Boolean(last) && last.date <= parseDate(end);
+}
+
 function slotWindow(date, slot, length) {
+  const sequence = slotSequence(date, slot, length);
+  const first = sequence[0];
+  const last = sequence.at(-1);
   return {
-    start: dateAtHour(date, slot.startHour),
-    end: dateAtHour(addDays(date, length - 1 + slot.endOffsetDays), slot.endHour)
+    start: dateAtHour(first.date, first.slot.startHour),
+    end: dateAtHour(addDays(last.date, last.slot.endOffsetDays), last.slot.endHour)
   };
 }
 
@@ -350,10 +388,11 @@ function timedOverlap(date, slot, length, rangeItem) {
   return rangeStart < event.end && rangeEnd > event.start;
 }
 
-function allDayOverlap(date, length, rangeItem) {
-  const eventStart = toKey(date);
-  const eventEnd = toKey(addDays(date, length - 1));
-  return rangeItem.start <= eventEnd && rangeItem.end >= eventStart;
+function allDayOverlap(date, slot, length, rangeItem) {
+  return sequenceSlotDates(date, slot, length).some((slotDate) => {
+    const dateKey = toKey(slotDate);
+    return rangeItem.start <= dateKey && rangeItem.end >= dateKey;
+  });
 }
 
 function blocksSlot(date, slot, length, rangeItem) {
@@ -367,7 +406,7 @@ function blocksSlot(date, slot, length, rangeItem) {
   if (rangeItem.block === "timed") {
     return timedOverlap(date, slot, length, rangeItem);
   }
-  return allDayOverlap(date, length, rangeItem);
+  return allDayOverlap(date, slot, length, rangeItem);
 }
 
 function selectedPeople() {
@@ -411,8 +450,20 @@ function renderFilters() {
 }
 
 function candidateStarts(start, end, length) {
-  const lastStart = addDays(parseDate(end), -(length - 1));
-  return eachDay(start, toKey(lastStart));
+  if (length > 1) {
+    start = maxDateKey(start, extendedWatersStart);
+    end = minDateKey(end, extendedWatersEnd);
+    if (parseDate(start) > parseDate(end)) return [];
+  }
+  return eachDay(start, end);
+}
+
+function maxDateKey(a, b) {
+  return parseDate(a) >= parseDate(b) ? a : b;
+}
+
+function minDateKey(a, b) {
+  return parseDate(a) <= parseDate(b) ? a : b;
 }
 
 function renderPlanner() {
@@ -424,7 +475,7 @@ function renderPlanner() {
   const people = selectedPeople();
   const length = Number(els.eventLength.value);
   const starts = candidateStarts(els.startDate.value, els.endDate.value, length);
-  const candidates = buildDateCandidates(starts, people, length);
+  const candidates = buildDateCandidates(starts, people, length, candidateEndDate(els.endDate.value, length));
   renderDateSearch(candidates, people.length, length);
   renderCalendar(people);
   renderDateDetail(people);
@@ -433,9 +484,13 @@ function renderPlanner() {
   renderOtherReservedSummary();
 }
 
-function buildDateCandidates(starts, people, length) {
+function candidateEndDate(end, length) {
+  return length > 1 ? minDateKey(end, extendedWatersEnd) : end;
+}
+
+function buildDateCandidates(starts, people, length, end) {
   return starts.flatMap((date) =>
-    slots.filter((slot) => !isReservedCandidate(date, slot, length)).map((slot) => {
+    slots.filter((slot) => sequenceFitsRange(date, slot, length, end) && !isReservedCandidate(date, slot, length)).map((slot) => {
       const conflicts = conflictsForSlot(date, slot, length, people);
       const specials = specialSlotsForWindow(date, slot, length);
       const isWeekend = isWeekendSlot(date, slot, length);
@@ -446,7 +501,7 @@ function buildDateCandidates(starts, people, length) {
         indicators: pickIndicators(date, slot, length),
         isWeekend,
         specials,
-        climate: averageClimateForWindow(date, length),
+        climate: averageClimateForWindow(date, slot, length),
         score: scoreFor(conflicts, people.length),
         ootCount: uniqueConflicts(conflicts).length
       };
@@ -456,7 +511,8 @@ function buildDateCandidates(starts, people, length) {
 
 function isReservedCandidate(date, slot, length) {
   const event = slotWindow(date, slot, length);
-  return [...boatReservations, ...otherReservations].some((item) => {
+  const blockingReservations = length > 1 ? otherReservations : [...boatReservations, ...otherReservations];
+  return blockingReservations.some((item) => {
     const reservedSlot = slots.find((candidate) => candidate.id === item.slotId);
     if (!reservedSlot) return false;
     const reserved = slotWindow(parseDate(item.date), reservedSlot, 1);
@@ -494,6 +550,7 @@ function filterDateCandidates(candidates) {
   const dayType = els.dayTypeFilter.value;
   const specialFilter = els.specialFilter.value;
   const selectedDays = checkedValues(els.dayFilters);
+  const selectedMonths = checkedValues(els.monthFilters);
   const selectedSlots = checkedValues(els.slotFilters);
 
   return candidates.filter((item) => {
@@ -501,6 +558,7 @@ function filterDateCandidates(candidates) {
     if (maxOot !== null && item.ootCount > maxOot) return false;
     if (minTemp !== null && (temp === null || temp < minTemp)) return false;
     if (!selectedDays.has(String(item.date.getDay()))) return false;
+    if (!selectedMonths.has(String(item.date.getMonth() + 1))) return false;
     if (!selectedSlots.has(item.slot.id)) return false;
     if (dayType === "weekend" && !item.isWeekend) return false;
     if (dayType === "weekday" && item.isWeekend) return false;
@@ -543,13 +601,13 @@ function dateCandidateMarkup(pick, peopleCount, length) {
   const conflicts = uniqueConflicts(pick.conflicts);
   const level = levelFor(pick.conflicts);
   const className = level === 3 ? "is-bad" : level === 2 ? "is-captain" : level === 1 ? "is-warn" : "";
-  const label = dateLabel(pick.date, length);
+  const label = dateLabel(pick.date, pick.slot, length);
   return `
     <article class="date-result ${className}">
       <div class="date-result__head">
         <div>
           <strong class="date-result__date">${label}</strong>
-          <span class="date-result__slot">${pick.slot.name} &middot; ${pick.slot.timeLabel}</span>
+          <span class="date-result__slot">Starts ${pick.slot.name} &middot; ${pick.slot.timeLabel} &middot; ${length} ${length === 1 ? "slot" : "slots"}</span>
         </div>
         <button class="ghost-button date-result__select" type="button" data-date-jump="${toKey(pick.date)}">View</button>
       </div>
@@ -578,9 +636,12 @@ function uniqueConflicts(conflicts) {
   return [...seen.values()];
 }
 
-function dateLabel(date, length) {
+function dateLabel(date, slot, length) {
   if (length === 1) return `${weekday.format(date)}, ${compactDate.format(date)}`;
-  return `${compactDate.format(date)}-${compactDate.format(addDays(date, length - 1))}`;
+  const sequence = slotSequence(date, slot, length);
+  const last = sequence.at(-1);
+  if (toKey(last.date) === toKey(date)) return `${weekday.format(date)}, ${compactDate.format(date)}`;
+  return `${compactDate.format(date)}-${compactDate.format(last.date)}`;
 }
 
 function slotIndicators(date, slot, length = 1) {
@@ -594,7 +655,7 @@ function slotIndicators(date, slot, length = 1) {
 
 function pickIndicators(date, slot, length = 1) {
   const indicators = slotIndicators(date, slot, length);
-  const holidayNames = holidaysForWindow(date, length);
+  const holidayNames = holidaysForWindow(date, slot, length);
   if (holidayNames.length) {
     indicators.push({ type: "holiday", label: "Hol", title: holidayNames.join(", ") });
   }
@@ -614,8 +675,13 @@ function isWeekendSlot(date, slot, length = 1) {
   return false;
 }
 
-function holidaysForWindow(date, length = 1) {
-  return Array.from({ length }, (_, index) => toKey(addDays(date, index)))
+function holidaysForWindow(date, slot = slots[0], length = 1) {
+  if (typeof slot === "number") {
+    length = slot;
+    slot = slots[0];
+  }
+  return sequenceSlotDates(date, slot, length)
+    .map((slotDate) => toKey(slotDate))
     .map((dateKey) => holidayLookup.get(dateKey))
     .filter(Boolean);
 }
@@ -638,8 +704,8 @@ function climateShortLabel(date) {
   return `${Math.round(climate.average)}F`;
 }
 
-function averageClimateForWindow(date, length) {
-  const climates = Array.from({ length }, (_, index) => climateForDate(addDays(date, index))).filter(Boolean);
+function averageClimateForWindow(date, slot, length) {
+  const climates = sequenceSlotDates(date, slot, length).map(climateForDate).filter(Boolean);
   if (!climates.length) return null;
   return {
     average: climates.reduce((total, item) => total + item.average, 0) / climates.length,
@@ -906,10 +972,11 @@ function monthMarkup(month, people, start, end) {
         isOtherReserved: otherReservedSlotIds.has(slot.id)
       };
     });
-    const level = Math.max(...daySlots.map((item) => item.level));
+    const fullyReserved = daySlots.every((item) => item.isReserved || item.isOtherReserved);
+    const level = fullyReserved ? "reserved" : Math.max(...daySlots.map((item) => item.level));
     const ootCount = uniqueConflicts(daySlots.flatMap((item) => item.conflicts)).length;
     return `
-      <button class="day" data-date="${dateKey}" data-level="${level}" data-special-date="${specialOnDate}" aria-pressed="${dateKey === selectedDateKey}" title="${dayTooltipFor(date, daySlots, people.length, specials)}">
+      <button class="day" data-date="${dateKey}" data-level="${level}" data-special-date="${fullyReserved ? false : specialOnDate}" data-fully-reserved="${fullyReserved}" aria-pressed="${dateKey === selectedDateKey}" title="${dayTooltipFor(date, daySlots, people.length, specials)}">
         <span class="day__head">
           <strong>${date.getDate()}</strong>
           ${ootCount ? `<span class="day__oot-count">${ootCount} OOT</span>` : ""}
@@ -1317,6 +1384,7 @@ function boot() {
     els.specialFilter,
     els.minTemp,
     ...els.dayFilters,
+    ...els.monthFilters,
     ...els.slotFilters
   ].forEach((el) => {
     el.addEventListener("input", renderPlanner);

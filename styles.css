@@ -899,7 +899,7 @@ select {
 }
 
 .month__title {
-  margin-bottom: 10px;
+  margin-bottom: 6px;
   font-weight: 850;
 }
 
@@ -909,7 +909,6 @@ select {
   gap: 5px;
 }
 
-.dow,
 .day {
   height: 86px;
   border-radius: 6px;
@@ -919,7 +918,10 @@ select {
 .dow {
   display: grid;
   place-items: center;
+  min-height: 22px;
+  border-radius: 6px;
   color: var(--muted);
+  font-size: .78rem;
   font-weight: 800;
 }
 
@@ -959,6 +961,12 @@ select {
   color: #fff;
   border-color: #b6463b;
   background: #b6463b;
+}
+
+.day[data-fully-reserved="true"] {
+  color: #f8fafb;
+  border-color: #7a838c;
+  background: var(--other-reserved);
 }
 
 .day.is-outside {
