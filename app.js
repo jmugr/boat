@@ -390,6 +390,10 @@ function lastItem(items) {
   return items[items.length - 1];
 }
 
+function flatten(items) {
+  return [].concat(...items);
+}
+
 function slotSequence(date, slot, length) {
   const startIndex = slots.indexOf(slot);
   if (startIndex === -1) return [];
@@ -463,10 +467,12 @@ function selectedPeople() {
 }
 
 function conflictsForSlot(date, slot, length, people = selectedPeople()) {
-  return people.flatMap((person) =>
-    person.ranges
-      .filter((item) => blocksSlot(date, slot, length, item))
-      .map((item) => ({ person: person.name, ...item }))
+  return flatten(
+    people.map((person) =>
+      person.ranges
+        .filter((item) => blocksSlot(date, slot, length, item))
+        .map((item) => ({ person: person.name, ...item }))
+    )
   );
 }
 
@@ -536,8 +542,9 @@ function candidateEndDate(end, length) {
 }
 
 function buildDateCandidates(starts, requiredPeople, displayPeople, length, end) {
-  return starts.flatMap((date) =>
-    slots.flatMap((slot) => {
+  return flatten(
+    starts.map((date) =>
+      flatten(slots.map((slot) => {
       if (!sequenceFitsRange(date, slot, length, end) || isReservedCandidate(date, slot, length)) return [];
       const requiredConflicts = conflictsForSlot(date, slot, length, requiredPeople);
       if (requiredConflicts.length) return [];
@@ -555,7 +562,8 @@ function buildDateCandidates(starts, requiredPeople, displayPeople, length, end)
         score: scoreFor(conflicts, displayPeople.length),
         ootCount: uniqueConflicts(conflicts).length
       };
-    })
+    }))
+    )
   );
 }
 
@@ -590,8 +598,10 @@ function visibleDateResults(candidates) {
 
 function searchResultSlotKeys(results, length) {
   return new Set(
-    results.flatMap((result) =>
-      slotSequence(result.date, result.slot, length).map((item) => `${toKey(item.date)}|${item.slot.id}`)
+    flatten(
+      results.map((result) =>
+        slotSequence(result.date, result.slot, length).map((item) => `${toKey(item.date)}|${item.slot.id}`)
+      )
     )
   );
 }
@@ -618,7 +628,7 @@ function filterDateCandidates(candidates) {
   const selectedSlots = checkedValues(els.slotFilters);
 
   return candidates.filter((item) => {
-    const temp = item.climate?.average ?? null;
+    const temp = item.climate ? item.climate.average : null;
     if (minTemp !== null && (temp === null || temp < minTemp)) return false;
     if (!selectedDays.has(String(item.date.getDay()))) return false;
     if (!selectedMonths.has(String(item.date.getMonth() + 1))) return false;
@@ -657,7 +667,7 @@ function candidateSortFor(sortKey) {
 }
 
 function climateSortValue(item) {
-  return item.climate?.average ?? -Infinity;
+  return item.climate ? item.climate.average : -Infinity;
 }
 
 function dateCandidateMarkup(pick, peopleCount, length) {
@@ -750,7 +760,8 @@ function holidaysForWindow(date, slot = slots[0], length = 1) {
 }
 
 function climateForDate(date) {
-  const item = climateNormals[date.getMonth() + 1]?.[date.getDate() - 1];
+  const month = climateNormals[date.getMonth() + 1];
+  const item = month ? month[date.getDate() - 1] : null;
   if (!item) return null;
   return { average: item[0], precipitation: item[1] };
 }
@@ -846,10 +857,12 @@ function specialOverlapsSlot(date, slot, item) {
 
 function specialSlotIdsForDate(date, specials) {
   return new Set(
-    specials.flatMap((item) =>
-      slots
-        .filter((slot) => specialOverlapsSlot(date, slot, item))
-        .map((slot) => slot.id)
+    flatten(
+      specials.map((item) =>
+        slots
+          .filter((slot) => specialOverlapsSlot(date, slot, item))
+          .map((slot) => slot.id)
+      )
     )
   );
 }
@@ -1018,7 +1031,7 @@ function monthMarkup(month, people, start, end, searchResultSlots) {
     const fullyBoatReserved = daySlots.every((item) => item.isReserved);
     const fullyReserved = daySlots.every((item) => item.isReserved || item.isOtherReserved);
     const level = fullyReserved ? "reserved" : Math.max(...daySlots.map((item) => item.level));
-    const ootCount = uniqueConflicts(daySlots.flatMap((item) => item.conflicts)).length;
+    const ootCount = uniqueConflicts(flatten(daySlots.map((item) => item.conflicts))).length;
     return `
       <button class="day" data-date="${dateKey}" data-level="${level}" data-special-date="${fullyReserved ? false : specialOnDate}" data-fully-reserved="${fullyReserved}" data-fully-boat-reserved="${fullyBoatReserved}" aria-pressed="${dateKey === selectedDateKey}" title="${dayTooltipFor(date, daySlots, people.length, specials)}">
         <span class="day__head">
@@ -1082,7 +1095,7 @@ function renderDateDetail(people) {
     conflicts: conflictsForSlot(date, slot, 1, people),
     indicators: slotIndicators(date, slot, 1)
   }));
-  const allConflicts = uniqueConflicts(daySlots.flatMap((item) => item.conflicts));
+  const allConflicts = uniqueConflicts(flatten(daySlots.map((item) => item.conflicts)));
   const specials = specialSlotsForDate(selectedDateKey);
   const reservations = [
     ...boatReservationsForDate(selectedDateKey).map((item) => ({ ...item, type: "boat" })),
