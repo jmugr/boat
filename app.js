@@ -98,6 +98,7 @@ const els = {
   dateResults: document.querySelector("#dateResults"),
   calendar: document.querySelector("#calendar"),
   dateDetail: document.querySelector("#dateDetail"),
+  boatReserved: document.querySelector("#boatReserved"),
   specialSummary: document.querySelector("#specialSummary"),
   sourceGrid: document.querySelector("#sourceGrid"),
   trackedPeople: document.querySelector("#trackedPeople"),
@@ -180,6 +181,13 @@ const climateNormals = {
     [50.5, 0.11], [50.0, 0.11], [49.6, 0.11], [49.2, 0.11], [48.8, 0.11], [48.4, 0.10], [48.0, 0.10]
   ]
 };
+const boatReservations = [
+  boatReservation("2026-07-10", "evening"),
+  boatReservation("2026-07-25", "morning"),
+  boatReservation("2026-08-13", "evening"),
+  boatReservation("2026-09-03", "evening"),
+  boatReservation("2026-09-10", "evening")
+];
 const specialSlots = [
   specialSlot("2026-07-10", "17:00", null, "Chris Lake Navy Pier Open Air"),
   specialSlot("2026-07-11", "17:00", null, "Chris Lake Navy Pier Open Air"),
@@ -207,6 +215,10 @@ function range(start, end) {
 
 function slotRange(date, slotId) {
   return { start: date, end: date, block: "slot", slotId };
+}
+
+function boatReservation(date, slotId) {
+  return { date, slotId };
 }
 
 function specialSlot(date, startTime, endTime, title) {
@@ -372,6 +384,7 @@ function renderPlanner() {
   renderDateSearch(candidates, people.length, length);
   renderCalendar(people);
   renderDateDetail(people);
+  renderBoatReserved(people);
   renderSpecialSummary();
 
   const best = ranked[0]?.score ?? 0;
@@ -625,6 +638,11 @@ function specialSlotsForWindow(date, slot, length) {
   });
 }
 
+function boatReservationsForDate(date) {
+  const dateKey = typeof date === "string" ? date : toKey(date);
+  return boatReservations.filter((item) => item.date === dateKey);
+}
+
 function specialWindow(item) {
   if (!item.startTime) return null;
   const date = parseDate(item.date);
@@ -692,6 +710,63 @@ function renderSpecialSummary() {
   `;
 }
 
+function renderBoatReserved(people) {
+  const sorted = [...boatReservations].sort((a, b) => a.date.localeCompare(b.date) || slotOrder(a.slotId) - slotOrder(b.slotId));
+
+  els.boatReserved.innerHTML = `
+    <div class="section-head">
+      <div>
+        <p class="eyebrow">Boat Reserved</p>
+        <h2>Drafted slots</h2>
+      </div>
+      <span class="result-count">${sorted.length} ${sorted.length === 1 ? "slot" : "slots"}</span>
+    </div>
+    <div class="boat-reserved__grid">
+      ${sorted.map((item) => boatReservedMarkup(item, people)).join("")}
+    </div>
+  `;
+}
+
+function slotOrder(slotId) {
+  const index = slots.findIndex((item) => item.id === slotId);
+  return index === -1 ? slots.length : index;
+}
+
+function boatReservedMarkup(item, people) {
+  const date = parseDate(item.date);
+  const slot = slots.find((candidate) => candidate.id === item.slotId);
+  if (!slot) return "";
+
+  const conflicts = uniqueConflicts(conflictsForSlot(date, slot, 1, people));
+  const unavailable = new Set(conflicts);
+  const available = people.map((person) => person.name).filter((name) => !unavailable.has(name));
+  const specials = specialSlotsForWindow(date, slot, 1);
+
+  return `
+    <article class="boat-reserved__card">
+      <div class="boat-reserved__head">
+        <div>
+          <strong>${fullDate.format(date)}</strong>
+          <span>${slot.name} &middot; ${slot.timeLabel}</span>
+        </div>
+        <span>${available.length}/${people.length} available</span>
+      </div>
+      <div class="boat-reserved__block">
+        <strong>Special events</strong>
+        <div class="boat-reserved__chips">
+          ${specials.length ? specials.map((special) => `<span class="special-summary__chip" title="${escapeHtml(specialTimeLabel(special))}">${escapeHtml(special.title)}</span>`).join("") : `<span class="chip chip--clear">None listed</span>`}
+        </div>
+      </div>
+      <div class="boat-reserved__block">
+        <strong>Not OOT</strong>
+        <div class="boat-reserved__chips">
+          ${available.length ? available.map((name) => `<span class="chip chip--clear">${escapeHtml(name)}</span>`).join("") : `<span class="chip">No selected people available</span>`}
+        </div>
+      </div>
+    </article>
+  `;
+}
+
 function specialGroupMarkup([title, items]) {
   const sorted = [...items].sort((a, b) => a.date.localeCompare(b.date) || (a.startTime || "").localeCompare(b.startTime || ""));
   return `
@@ -733,7 +808,9 @@ function monthMarkup(month, people, start, end) {
     const holidayNames = holidaysForWindow(date, 1);
     const climate = climateShortLabel(date);
     const specials = specialSlotsForDate(dateKey);
+    const reservations = boatReservationsForDate(dateKey);
     const specialSlotIds = specialSlotIdsForDate(date, specials);
+    const reservedSlotIds = new Set(reservations.map((item) => item.slotId));
     const hasAllDaySpecial = specials.some((item) => !item.startTime);
     const specialOnDate = hasAllDaySpecial || (specials.length > 0 && specialSlotIds.size === 0);
     const daySlots = slots.map((slot) => {
@@ -744,7 +821,8 @@ function monthMarkup(month, people, start, end) {
         level: levelFor(conflicts),
         names: [...new Set(conflicts.map((item) => item.person.split(" ")[0]))],
         indicators: slotIndicators(date, slot, 1),
-        isSpecial: specialSlotIds.has(slot.id)
+        isSpecial: specialSlotIds.has(slot.id),
+        isReserved: reservedSlotIds.has(slot.id)
       };
     });
     const level = Math.max(...daySlots.map((item) => item.level));
@@ -921,12 +999,14 @@ function slotDetailMarkup(item, peopleCount) {
 }
 
 function slotMarkup(item) {
-  const title = item.indicators.map((indicator) => indicator.title).join(", ");
-  const marks = item.indicators.length
+  const title = item.isReserved
+    ? "Boat reserved"
+    : item.indicators.map((indicator) => indicator.title).join(", ");
+  const marks = !item.isReserved && item.indicators.length
     ? `<span class="slot-pill__marks">${item.indicators.map((indicator) => `<i data-type="${indicator.type}">${indicator.label[0]}</i>`).join("")}</span>`
     : "";
   return `
-    <span class="slot-pill" data-level="${item.level}" data-special-slot="${item.isSpecial}" title="${escapeHtml(title)}">
+    <span class="slot-pill" data-level="${item.isReserved ? "reserved" : item.level}" data-special-slot="${item.isSpecial}" data-reserved-slot="${item.isReserved}" title="${escapeHtml(title)}">
       <span class="slot-pill__text">${item.slot.shortName}</span>
       ${marks}
     </span>

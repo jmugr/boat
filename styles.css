@@ -12,6 +12,7 @@
   --orange: #d96c20;
   --red: #b6463b;
   --special: #0f7c91;
+  --reserved: #2458a6;
   --weekend: #5b5ab7;
   --holiday: #8f3f76;
   --shadow: 0 18px 45px rgba(23, 32, 38, .12);
@@ -276,6 +277,10 @@ select {
 
 .special {
   background: var(--special);
+}
+
+.reserved {
+  background: var(--reserved);
 }
 
 .weekend {
@@ -574,6 +579,78 @@ select {
   border: 1px solid #b7d3dc;
   border-radius: 8px;
   background: #f7fcfd;
+}
+
+.boat-reserved {
+  margin-top: 28px;
+  padding-top: 26px;
+  border-top: 1px solid var(--line);
+}
+
+.boat-reserved .section-head {
+  margin-bottom: 14px;
+}
+
+.boat-reserved__grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.boat-reserved__card {
+  display: grid;
+  gap: 12px;
+  padding: 14px;
+  border: 1px solid #b7d3dc;
+  border-left: 5px solid var(--reserved);
+  border-radius: 8px;
+  background: #f8fbff;
+}
+
+.boat-reserved__head {
+  display: flex;
+  align-items: start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.boat-reserved__head strong,
+.boat-reserved__head span {
+  display: block;
+}
+
+.boat-reserved__head div > span {
+  margin-top: 4px;
+  color: #31576b;
+  font-size: .8rem;
+  font-weight: 850;
+}
+
+.boat-reserved__head > span {
+  flex: 0 0 auto;
+  padding: 5px 7px;
+  border-radius: 999px;
+  color: #173225;
+  background: #dceee0;
+  font-size: .74rem;
+  font-weight: 850;
+  white-space: nowrap;
+}
+
+.boat-reserved__block {
+  display: grid;
+  gap: 7px;
+}
+
+.boat-reserved__block > strong {
+  color: #35434a;
+  font-size: .78rem;
+}
+
+.boat-reserved__chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
 }
 
 .special-summary__head {
@@ -976,6 +1053,19 @@ select {
   background: #b6463b;
 }
 
+.slot-pill[data-reserved-slot="true"] {
+  grid-template-rows: 1fr;
+  color: #fff;
+  border-color: var(--reserved);
+  background: var(--reserved);
+  outline: 3px solid rgba(36, 88, 166, .24);
+  outline-offset: 1px;
+}
+
+.slot-pill[data-reserved-slot="true"][data-special-slot="true"] {
+  outline-color: var(--special);
+}
+
 .source {
   margin-top: 24px;
   padding: 22px;
@@ -1077,6 +1167,7 @@ button:not(.day):hover {
   .date-search-controls,
   .date-results,
   .date-detail__slots,
+  .boat-reserved__grid,
   .source-grid {
     grid-template-columns: 1fr;
   }
