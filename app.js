@@ -386,6 +386,10 @@ function eachDay(start, end) {
   return days;
 }
 
+function lastItem(items) {
+  return items[items.length - 1];
+}
+
 function slotSequence(date, slot, length) {
   const startIndex = slots.indexOf(slot);
   if (startIndex === -1) return [];
@@ -409,14 +413,14 @@ function sequenceSlotDates(date, slot, length) {
 
 function sequenceFitsRange(date, slot, length, end) {
   const sequence = slotSequence(date, slot, length);
-  const last = sequence.at(-1);
+  const last = lastItem(sequence);
   return Boolean(last) && last.date <= parseDate(end);
 }
 
 function slotWindow(date, slot, length) {
   const sequence = slotSequence(date, slot, length);
   const first = sequence[0];
-  const last = sequence.at(-1);
+  const last = lastItem(sequence);
   return {
     start: dateAtHour(first.date, first.slot.startHour),
     end: dateAtHour(addDays(last.date, last.slot.endOffsetDays), last.slot.endHour)
@@ -698,7 +702,7 @@ function uniqueConflicts(conflicts) {
 function dateLabel(date, slot, length) {
   if (length === 1) return `${weekday.format(date)}, ${compactDate.format(date)}`;
   const sequence = slotSequence(date, slot, length);
-  const last = sequence.at(-1);
+  const last = lastItem(sequence);
   if (toKey(last.date) === toKey(date)) return `${weekday.format(date)}, ${compactDate.format(date)}`;
   return `${compactDate.format(date)}-${compactDate.format(last.date)}`;
 }
