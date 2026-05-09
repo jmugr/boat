@@ -10,7 +10,9 @@
   --green: #3f8f55;
   --gold: #b97919;
   --orange: #d96c20;
-  --red: #b6463b;
+  --red: #b78d8a;
+  --red-muted: #c7a3a0;
+  --search-result: #ff1f1f;
   --special: #0f7c91;
   --reserved: #2458a6;
   --other-reserved: #8b949e;
@@ -267,6 +269,10 @@ select {
 
 .bad {
   background: var(--red);
+}
+
+.calendar-result {
+  background: var(--search-result);
 }
 
 .special {
@@ -958,9 +964,9 @@ select {
 }
 
 .day[data-level="3"] {
-  color: #fff;
-  border-color: #b6463b;
-  background: #b6463b;
+  color: #3b2322;
+  border-color: #a97874;
+  background: var(--red-muted);
 }
 
 .day[data-fully-reserved="true"] {
@@ -1112,8 +1118,10 @@ select {
 }
 
 .slot-pill[data-level="3"] {
-  color: #fff;
-  background: #b6463b;
+  color: #3b2322;
+  border-color: #a97874;
+  background: var(--red-muted);
+  opacity: .88;
 }
 
 .slot-pill[data-reserved-slot="true"] {
@@ -1136,6 +1144,10 @@ select {
   background: var(--other-reserved);
   outline: 0;
   opacity: .82;
+}
+
+.slot-pill[data-search-result-slot="true"] {
+  box-shadow: 0 0 0 3px var(--search-result);
 }
 
 .source {

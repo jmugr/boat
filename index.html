@@ -29,6 +29,7 @@
                 <span><i class="warn"></i>someone OOT</span>
                 <span><i class="captain"></i>captain OOT</span>
                 <span><i class="bad"></i>both captains OOT</span>
+                <span><i class="calendar-result"></i>search result</span>
                 <span><i class="reserved"></i>boat reserved</span>
                 <span><i class="other-reserved"></i>reserved by others</span>
                 <span><i class="special"></i>special</span>
@@ -72,7 +73,7 @@
                 <label for="sortDates">Sort by</label>
                 <select id="sortDates">
                   <option value="oot-low">Fewest OOT</option>
-                  <option value="temp-warm">Warmest average temp</option>
+                  <option value="temp-warm" selected>Warmest average temp</option>
                   <option value="temp-cool">Coolest average temp</option>
                   <option value="date-early">Earliest date</option>
                   <option value="special-first">Special dates first</option>
@@ -83,7 +84,7 @@
                 <label for="maxOot">Max OOT</label>
                 <select id="maxOot">
                   <option value="">Any</option>
-                  <option value="0">0 OOT</option>
+                  <option value="0" selected>0 OOT</option>
                   <option value="1">1 OOT</option>
                   <option value="2">2 OOT</option>
                   <option value="3">3 OOT</option>
@@ -108,6 +109,10 @@
               <div class="field-row">
                 <label for="minTemp">Min avg temp</label>
                 <input id="minTemp" type="text" inputmode="numeric" pattern="[0-9]*" placeholder="Any">
+              </div>
+              <div class="field-row">
+                <label for="topMatches">Top matches</label>
+                <input id="topMatches" type="text" inputmode="numeric" pattern="[0-9]*" value="12" placeholder="All">
               </div>
               <fieldset class="toggle-group toggle-group--wide" aria-label="Days of week">
                 <legend>Days</legend>

@@ -92,6 +92,7 @@ const els = {
   dayTypeFilter: document.querySelector("#dayTypeFilter"),
   specialFilter: document.querySelector("#specialFilter"),
   minTemp: document.querySelector("#minTemp"),
+  topMatches: document.querySelector("#topMatches"),
   dayFilters: document.querySelectorAll("[name='dayFilter']"),
   monthFilters: document.querySelectorAll("[name='monthFilter']"),
   slotFilters: document.querySelectorAll("[name='slotFilter']"),
@@ -476,8 +477,9 @@ function renderPlanner() {
   const length = Number(els.eventLength.value);
   const starts = candidateStarts(els.startDate.value, els.endDate.value, length);
   const candidates = buildDateCandidates(starts, people, length, candidateEndDate(els.endDate.value, length));
-  renderDateSearch(candidates, people.length, length);
-  renderCalendar(people);
+  const dateResults = visibleDateResults(candidates);
+  renderDateSearch(dateResults, people.length, length);
+  renderCalendar(people, searchResultSlotKeys(dateResults.visible, length));
   renderDateDetail(people);
   renderBoatReserved(people);
   renderSpecialSummary();
@@ -529,13 +531,28 @@ function defaultCandidateSort(a, b) {
   );
 }
 
-function renderDateSearch(candidates, peopleCount, length) {
+function visibleDateResults(candidates) {
   const filtered = filterDateCandidates(candidates);
   filtered.sort(candidateSortFor(els.sortDates.value));
+  const requestedLimit = Number(els.topMatches.value);
+  const limit = els.topMatches.value === "" || !Number.isFinite(requestedLimit) || requestedLimit <= 0 ? filtered.length : requestedLimit;
+  const visible = filtered.slice(0, limit);
+  return { filtered, visible };
+}
 
-  els.dateResultCount.textContent = `${filtered.length} ${filtered.length === 1 ? "match" : "matches"}`;
-  els.dateResults.innerHTML = filtered.length
-    ? filtered.slice(0, 24).map((pick) => dateCandidateMarkup(pick, peopleCount, length)).join("")
+function searchResultSlotKeys(results, length) {
+  return new Set(
+    results.flatMap((result) =>
+      slotSequence(result.date, result.slot, length).map((item) => `${toKey(item.date)}|${item.slot.id}`)
+    )
+  );
+}
+
+function renderDateSearch(results, peopleCount, length) {
+  const { filtered, visible } = results;
+  els.dateResultCount.textContent = `${visible.length} of ${filtered.length} ${filtered.length === 1 ? "match" : "matches"}`;
+  els.dateResults.innerHTML = visible.length
+    ? visible.map((pick) => dateCandidateMarkup(pick, peopleCount, length)).join("")
     : `
       <div class="date-results__empty">
         <strong>No matching dates</strong>
@@ -928,7 +945,7 @@ function specialSummaryDateLabel(item) {
   return `${date}, ${specialTimeLabel(item)}`;
 }
 
-function renderCalendar(people) {
+function renderCalendar(people, searchResultSlots = new Set()) {
   const months = [];
   const start = parseDate(els.startDate.value);
   const end = parseDate(els.endDate.value);
@@ -938,10 +955,10 @@ function renderCalendar(people) {
     cursor = new Date(cursor.getFullYear(), cursor.getMonth() + 1, 1);
   }
 
-  els.calendar.innerHTML = months.map((month) => monthMarkup(month, people, start, end)).join("");
+  els.calendar.innerHTML = months.map((month) => monthMarkup(month, people, start, end, searchResultSlots)).join("");
 }
 
-function monthMarkup(month, people, start, end) {
+function monthMarkup(month, people, start, end, searchResultSlots) {
   const first = new Date(month.getFullYear(), month.getMonth(), 1);
   const last = new Date(month.getFullYear(), month.getMonth() + 1, 0);
   const visibleStart = start > first ? start : first;
@@ -969,7 +986,8 @@ function monthMarkup(month, people, start, end) {
         indicators: slotIndicators(date, slot, 1),
         isSpecial: specialSlotIds.has(slot.id),
         isReserved: reservedSlotIds.has(slot.id),
-        isOtherReserved: otherReservedSlotIds.has(slot.id)
+        isOtherReserved: otherReservedSlotIds.has(slot.id),
+        isSearchResult: searchResultSlots.has(`${dateKey}|${slot.id}`)
       };
     });
     const fullyReserved = daySlots.every((item) => item.isReserved || item.isOtherReserved);
@@ -1181,13 +1199,14 @@ function slotMarkup(item) {
     : item.isReserved
     ? "Boat reserved"
     : item.indicators.map((indicator) => indicator.title).join(", ");
+  const titleWithSearch = [item.isSearchResult ? "In Date Search results" : "", title].filter(Boolean).join("; ");
   const marks = !item.isReserved && !item.isOtherReserved && item.indicators.length
     ? `<span class="slot-pill__marks">${item.indicators.map((indicator) => `<i data-type="${indicator.type}">${indicator.label[0]}</i>`).join("")}</span>`
     : "";
   const level = item.isOtherReserved ? "other-reserved" : item.isReserved ? "reserved" : item.level;
   const isSpecial = item.isOtherReserved ? false : item.isSpecial;
   return `
-    <span class="slot-pill" data-level="${level}" data-special-slot="${isSpecial}" data-reserved-slot="${item.isReserved}" data-other-reserved-slot="${item.isOtherReserved}" title="${escapeHtml(title)}">
+    <span class="slot-pill" data-level="${level}" data-special-slot="${isSpecial}" data-reserved-slot="${item.isReserved}" data-other-reserved-slot="${item.isOtherReserved}" data-search-result-slot="${item.isSearchResult}" title="${escapeHtml(titleWithSearch)}">
       <span class="slot-pill__text">${item.slot.shortName}</span>
       ${marks}
     </span>
@@ -1383,6 +1402,7 @@ function boot() {
     els.dayTypeFilter,
     els.specialFilter,
     els.minTemp,
+    els.topMatches,
     ...els.dayFilters,
     ...els.monthFilters,
     ...els.slotFilters
