@@ -103,12 +103,16 @@ const els = {
   dateDetail: document.querySelector("#dateDetail"),
   boatReserved: document.querySelector("#boatReserved"),
   specialSummary: document.querySelector("#specialSummary"),
-  sourceGrid: document.querySelector("#sourceGrid")
+  sourceGrid: document.querySelector("#sourceGrid"),
+  reservedOnlyCalendar: document.querySelector("#reservedOnlyCalendar"),
+  reservedOnlyList: document.querySelector("#reservedOnlyList")
 };
 
 const storageKey = "my-way-planner-oots-v1";
 const extendedWatersStart = "2026-06-20";
 const extendedWatersEnd = "2026-09-20";
+const defaultStartDate = "2026-05-24";
+const defaultEndDate = "2026-10-18";
 const captains = new Set(["Joe", "Sean"]);
 const captainOrder = ["Joe", "Sean"];
 let selectedDateKey = null;
@@ -185,10 +189,15 @@ const climateNormals = {
   ]
 };
 const boatReservations = [
+  boatReservation("2026-06-16", "evening"),
+  boatReservation("2026-06-27", "morning"),
   boatReservation("2026-07-01", "evening"),
+  boatReservation("2026-07-04", "morning"),
   boatReservation("2026-07-10", "evening"),
+  boatReservation("2026-07-20", "evening"),
   boatReservation("2026-07-25", "morning"),
   boatReservation("2026-08-13", "evening"),
+  boatReservation("2026-08-18", "evening"),
   boatReservation("2026-09-03", "evening"),
   boatReservation("2026-09-10", "morning"),
   boatReservation("2026-09-10", "evening"),
@@ -199,6 +208,7 @@ const boatReservations = [
 const otherReservations = [
   otherReservation("2026-05-30", "morning"),
   otherReservation("2026-05-31", "morning"),
+  otherReservation("2026-06-03", "evening"),
   otherReservation("2026-06-04", "morning", "Maintenance"),
   otherReservation("2026-06-04", "evening"),
   otherReservation("2026-06-09", "morning"),
@@ -206,19 +216,25 @@ const otherReservations = [
   otherReservation("2026-06-10", "evening"),
   otherReservation("2026-06-11", "evening"),
   otherReservation("2026-06-12", "morning", "Maintenance"),
+  otherReservation("2026-06-13", "morning"),
+  otherReservation("2026-06-13", "evening"),
   otherReservation("2026-06-15", "morning", "Maintenance"),
   otherReservation("2026-06-15", "evening"),
   otherReservation("2026-06-18", "evening"),
   otherReservation("2026-06-20", "morning"),
   otherReservation("2026-06-21", "morning"),
   otherReservation("2026-06-21", "evening"),
+  otherReservation("2026-06-22", "evening"),
   otherReservation("2026-06-23", "morning", "Maintenance"),
+  otherReservation("2026-06-24", "evening"),
   otherReservation("2026-06-25", "evening"),
   otherReservation("2026-07-01", "morning", "Maintenance"),
   otherReservation("2026-07-02", "evening"),
   otherReservation("2026-07-03", "morning"),
+  otherReservation("2026-07-05", "morning"),
   otherReservation("2026-07-06", "evening"),
   otherReservation("2026-07-07", "evening"),
+  otherReservation("2026-07-08", "evening"),
   otherReservation("2026-07-09", "morning", "Maintenance"),
   otherReservation("2026-07-09", "evening"),
   otherReservation("2026-07-10", "morning"),
@@ -235,6 +251,7 @@ const otherReservations = [
   otherReservation("2026-07-16", "morning"),
   otherReservation("2026-07-16", "evening"),
   otherReservation("2026-07-17", "morning"),
+  otherReservation("2026-07-17", "evening"),
   otherReservation("2026-07-18", "morning"),
   otherReservation("2026-07-18", "evening"),
   otherReservation("2026-07-19", "morning"),
@@ -247,6 +264,7 @@ const otherReservations = [
   otherReservation("2026-07-25", "evening"),
   otherReservation("2026-07-26", "morning"),
   otherReservation("2026-07-28", "morning", "Maintenance"),
+  otherReservation("2026-07-28", "evening"),
   otherReservation("2026-07-30", "evening"),
   otherReservation("2026-08-01", "morning"),
   otherReservation("2026-08-02", "morning"),
@@ -261,14 +279,21 @@ const otherReservations = [
   otherReservation("2026-08-14", "morning"),
   otherReservation("2026-08-15", "morning"),
   otherReservation("2026-08-16", "morning"),
+  otherReservation("2026-08-19", "evening"),
   otherReservation("2026-08-20", "evening"),
   otherReservation("2026-08-21", "morning", "Maintenance"),
+  otherReservation("2026-08-21", "evening"),
   otherReservation("2026-08-22", "morning"),
   otherReservation("2026-08-24", "morning", "Maintenance"),
+  otherReservation("2026-08-25", "morning"),
   otherReservation("2026-08-25", "evening"),
+  otherReservation("2026-08-26", "evening"),
   otherReservation("2026-08-27", "evening"),
+  otherReservation("2026-08-29", "morning"),
   otherReservation("2026-09-01", "morning", "Maintenance"),
+  otherReservation("2026-09-08", "evening"),
   otherReservation("2026-09-09", "morning", "Maintenance"),
+  otherReservation("2026-09-09", "evening"),
   otherReservation("2026-09-12", "evening"),
   otherReservation("2026-09-16", "morning"),
   otherReservation("2026-09-17", "morning"),
@@ -276,9 +301,14 @@ const otherReservations = [
   otherReservation("2026-09-18", "morning"),
   otherReservation("2026-09-18", "evening"),
   otherReservation("2026-09-19", "morning"),
+  otherReservation("2026-09-19", "evening"),
+  otherReservation("2026-09-22", "evening"),
+  otherReservation("2026-09-23", "evening"),
   otherReservation("2026-09-25", "morning", "Maintenance"),
   otherReservation("2026-09-28", "morning", "Maintenance"),
+  otherReservation("2026-10-02", "morning"),
   otherReservation("2026-10-06", "morning", "Maintenance"),
+  otherReservation("2026-10-07", "evening"),
   otherReservation("2026-10-14", "morning", "Maintenance")
 ];
 const specialSlots = [
@@ -535,7 +565,6 @@ function renderPlanner() {
   renderDateSearch(dateResults, calendarPeople.length, length);
   renderCalendar(calendarPeople, searchResultSlots);
   renderDateDetail(calendarPeople);
-  renderBoatReserved(calendarPeople);
   renderSpecialSummary();
 }
 
@@ -685,7 +714,13 @@ function dateCandidateMarkup(pick, peopleCount, length) {
   const level = levelFor(pick.conflicts);
   const className = level === 3 ? "is-bad" : level === 2 ? "is-captain" : level === 1 ? "is-warn" : "";
   const label = dateLabel(pick.date, pick.slot, length);
-  const indicators = pick.isValue ? [...pick.indicators, { type: "value", label: "Value", title: "Holiday or pre-holiday PM slot" }] : pick.indicators;
+  const indicators = [...pick.indicators];
+  if (pick.isValue) {
+    indicators.push({ type: "value", label: "Value", title: "Holiday or pre-holiday PM slot" });
+  }
+  if (pick.isSaturdayTwo) {
+    indicators.push({ type: "saturday-two", label: "Sat 2.0", title: "Sunday slot before a holiday" });
+  }
   return `
     <article class="date-result ${className}">
       <div class="date-result__head">
@@ -988,6 +1023,101 @@ function boatReservedMarkup(item, people) {
   `;
 }
 
+function reservedDayGroups() {
+  const groups = new Map();
+  for (const reservation of boatReservations) {
+    if (!groups.has(reservation.date)) groups.set(reservation.date, []);
+    groups.get(reservation.date).push(reservation);
+  }
+
+  return [...groups.entries()]
+    .sort(([dateA], [dateB]) => dateA.localeCompare(dateB))
+    .map(([date, reservations]) => ({
+      date,
+      reservations: reservations.sort((a, b) => slotOrder(a.slotId) - slotOrder(b.slotId))
+    }));
+}
+
+function reservedDayMarkup(group) {
+  const date = parseDate(group.date);
+  const holidayNames = holidaysForWindow(date, 1);
+  const dayConflicts = uniqueConflicts(
+    flatten(group.reservations.map((item) => {
+      const slot = slots.find((candidate) => candidate.id === item.slotId);
+      return slot ? conflictsForSlot(date, slot, 1, planner.people) : [];
+    }))
+  );
+
+  return `
+    <article class="reserved-day-card">
+      <div class="reserved-day-card__head">
+        <div>
+          <strong>${fullDateWithYear.format(date)}</strong>
+          ${holidayNames.length ? `<span>${escapeHtml(holidayNames.join(", "))}</span>` : ""}
+          ${climateMarkup(date)}
+        </div>
+        <span>${group.reservations.length} ${group.reservations.length === 1 ? "slot" : "slots"}</span>
+      </div>
+      <div class="reserved-day-card__summary">
+        <strong>OOT that day</strong>
+        <div class="reserved-day-card__chips">
+          ${dayConflicts.length ? dayConflicts.map((name) => `<span class="chip">${escapeHtml(name)}</span>`).join("") : `<span class="chip chip--clear">No one OOT</span>`}
+        </div>
+      </div>
+      <div class="reserved-slot-list">
+        ${group.reservations.map((item) => reservedSlotDetailMarkup(date, item)).join("")}
+      </div>
+    </article>
+  `;
+}
+
+function reservedSlotDetailMarkup(date, item) {
+  const slot = slots.find((candidate) => candidate.id === item.slotId);
+  if (!slot) return "";
+
+  const conflicts = uniqueConflicts(conflictsForSlot(date, slot, 1, planner.people));
+  const unavailable = new Set(conflicts);
+  const available = planner.people.map((person) => person.name).filter((name) => !unavailable.has(name));
+  const specials = specialSlotsForWindow(date, slot, 1);
+
+  return `
+    <section class="reserved-slot-detail">
+      <div class="reserved-slot-detail__head">
+        <div>
+          <strong>${escapeHtml(slot.name)}</strong>
+          <span>${escapeHtml(slot.timeLabel)}</span>
+        </div>
+        <span>${available.length}/${planner.people.length} available</span>
+      </div>
+      <div class="reserved-slot-detail__grid">
+        <div>
+          <strong>OOT</strong>
+          <div class="reserved-day-card__chips">
+            ${conflicts.length ? conflicts.map((name) => `<span class="chip">${escapeHtml(name)}</span>`).join("") : `<span class="chip chip--clear">No one OOT</span>`}
+          </div>
+        </div>
+        <div>
+          <strong>Not OOT</strong>
+          <div class="reserved-day-card__chips">
+            ${available.length ? available.map((name) => `<span class="chip chip--clear">${escapeHtml(name)}</span>`).join("") : `<span class="chip">No one available</span>`}
+          </div>
+        </div>
+        <div>
+          <strong>Special events</strong>
+          <div class="reserved-day-card__chips">
+            ${specials.length ? specials.map((special) => `<span class="special-summary__chip" title="${escapeHtml(specialTimeLabel(special))}">${escapeHtml(special.title)}</span>`).join("") : `<span class="chip chip--clear">None listed</span>`}
+          </div>
+        </div>
+      </div>
+    </section>
+  `;
+}
+
+function slotName(slotId) {
+  const slot = slots.find((candidate) => candidate.id === slotId);
+  return slot ? slot.name : slotId;
+}
+
 function specialGroupMarkup([title, items]) {
   const sorted = [...items].sort((a, b) => a.date.localeCompare(b.date) || (a.startTime || "").localeCompare(b.startTime || ""));
   return `
@@ -1016,6 +1146,71 @@ function renderCalendar(people, searchResultSlots = new Set()) {
   }
 
   els.calendar.innerHTML = months.map((month) => monthMarkup(month, people, start, end, searchResultSlots)).join("");
+}
+
+function renderReservedOnlyPage() {
+  const start = parseDate(defaultStartDate);
+  const end = parseDate(defaultEndDate);
+  const months = [];
+  let cursor = new Date(start.getFullYear(), start.getMonth(), 1);
+  while (cursor <= end) {
+    months.push(new Date(cursor));
+    cursor = new Date(cursor.getFullYear(), cursor.getMonth() + 1, 1);
+  }
+
+  els.reservedOnlyCalendar.innerHTML = months.map((month) => reservedOnlyMonthMarkup(month, start, end)).join("");
+  els.reservedOnlyList.innerHTML = reservedDayGroups().map(reservedDayMarkup).join("");
+}
+
+function reservedOnlyMonthMarkup(month, start, end) {
+  const first = new Date(month.getFullYear(), month.getMonth(), 1);
+  const last = new Date(month.getFullYear(), month.getMonth() + 1, 0);
+  const visibleStart = start > first ? start : first;
+  const visibleEnd = end < last ? end : last;
+  const blanks = Array.from({ length: visibleStart.getDay() }, () => `<div class="day is-outside"></div>`);
+  const days = eachDay(toKey(visibleStart), toKey(visibleEnd)).map((date) => {
+    const dateKey = toKey(date);
+    const reservations = boatReservationsForDate(dateKey);
+    const reservedSlotIds = new Set(reservations.map((item) => item.slotId));
+    const daySlots = slots.map((slot) => ({
+      slot,
+      conflicts: [],
+      level: 0,
+      names: [],
+      indicators: [],
+      isSpecial: false,
+      isReserved: reservedSlotIds.has(slot.id),
+      isOtherReserved: false,
+      isSearchResult: false
+    }));
+    const fullyBoatReserved = daySlots.every((item) => item.isReserved);
+    const title = reservations.length
+      ? `${fullDateWithYear.format(date)}: ${reservations.map((item) => slotName(item.slotId)).join(", ")} reserved`
+      : fullDateWithYear.format(date);
+
+    return `
+      <button class="day" data-date="${dateKey}" data-level="0" data-special-date="false" data-fully-reserved="${fullyBoatReserved}" data-fully-boat-reserved="${fullyBoatReserved}" title="${escapeHtml(title)}">
+        <span class="day__head">
+          <strong>${date.getDate()}</strong>
+        </span>
+        <span></span>
+        <span class="slot-list">
+          ${daySlots.map((item) => slotMarkup(item)).join("")}
+        </span>
+      </button>
+    `;
+  });
+
+  return `
+    <section class="month">
+      <div class="month__title">${monthNames.format(month)}</div>
+      <div class="month__grid">
+        ${dayNames.map((day) => `<div class="dow">${day}</div>`).join("")}
+        ${blanks.join("")}
+        ${days.join("")}
+      </div>
+    </section>
+  `;
 }
 
 function monthMarkup(month, people, start, end, searchResultSlots) {
@@ -1333,8 +1528,8 @@ function sourceRangesInDefaultRange(person) {
 }
 
 function clipRangeToDefaultRange(item) {
-  const defaultStart = els.startDate.defaultValue;
-  const defaultEnd = els.endDate.defaultValue;
+  const defaultStart = els.startDate ? els.startDate.defaultValue : defaultStartDate;
+  const defaultEnd = els.endDate ? els.endDate.defaultValue : defaultEndDate;
   const start = parseDate(item.start) < parseDate(defaultStart) ? defaultStart : item.start;
   const end = parseDate(item.end) > parseDate(defaultEnd) ? defaultEnd : item.end;
   if (parseDate(start) > parseDate(end)) return null;
@@ -1429,17 +1624,22 @@ function sourceRangeLabel(item) {
 
 function escapeHtml(value) {
   return String(value)
-    .replaceAll("&", "&amp;")
-    .replaceAll("<", "&lt;")
-    .replaceAll(">", "&gt;")
-    .replaceAll('"', "&quot;")
-    .replaceAll("'", "&#039;");
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
 }
 
 function boot() {
   loadPlanner();
+  if (els.reservedOnlyCalendar && els.reservedOnlyList) {
+    renderSource();
+    renderReservedOnlyPage();
+    return;
+  }
+
   renderFilters();
-  renderSource();
   els.peopleFilters.addEventListener("change", renderPlanner);
   els.calendar.addEventListener("click", (event) => {
     const day = event.target.closest(".day[data-date]");
