@@ -92,6 +92,7 @@ const els = {
   specialFilter: document.querySelector("#specialFilter"),
   minTemp: document.querySelector("#minTemp"),
   topMatches: document.querySelector("#topMatches"),
+  showSearchOnCalendar: document.querySelector("#showSearchOnCalendar"),
   dayFilters: document.querySelectorAll("[name='dayFilter']"),
   monthFilters: document.querySelectorAll("[name='monthFilter']"),
   slotFilters: document.querySelectorAll("[name='slotFilter']"),
@@ -530,8 +531,9 @@ function renderPlanner() {
   const starts = candidateStarts(els.startDate.value, els.endDate.value, length);
   const candidates = buildDateCandidates(starts, people, calendarPeople, length, candidateEndDate(els.endDate.value, length));
   const dateResults = visibleDateResults(candidates);
+  const searchResultSlots = els.showSearchOnCalendar.checked ? searchResultSlotKeys(dateResults.visible, length) : new Set();
   renderDateSearch(dateResults, calendarPeople.length, length);
-  renderCalendar(calendarPeople, searchResultSlotKeys(dateResults.visible, length));
+  renderCalendar(calendarPeople, searchResultSlots);
   renderDateDetail(calendarPeople);
   renderBoatReserved(calendarPeople);
   renderSpecialSummary();
@@ -1441,6 +1443,7 @@ function boot() {
     els.specialFilter,
     els.minTemp,
     els.topMatches,
+    els.showSearchOnCalendar,
     ...els.dayFilters,
     ...els.monthFilters,
     ...els.slotFilters
