@@ -395,6 +395,19 @@ select {
   background: var(--blue);
 }
 
+.toggle-group label[data-muted] span {
+  color: #849098;
+  border-color: #d5dde1;
+  background: #edf1f2;
+  opacity: .58;
+}
+
+.toggle-group label[data-muted] input:checked + span {
+  color: #eef3f5;
+  border-color: #9ba7ae;
+  background: #9ba7ae;
+}
+
 .toggle-group input:focus-visible + span {
   outline: 3px solid rgba(23, 107, 135, .28);
   outline-offset: 2px;
@@ -537,10 +550,6 @@ select {
 
 .indicator--holiday {
   background: var(--holiday);
-}
-
-.indicator--value {
-  background: var(--teal);
 }
 
 .indicator--saturday-two {
@@ -1179,42 +1188,39 @@ select {
 
 .reserved-detail-list {
   display: grid;
-  gap: 14px;
+  gap: 16px;
 }
 
-.reserved-day-card {
-  display: grid;
-  gap: 14px;
-  padding: 16px;
+.reserved-day-group {
   border: 1px solid var(--line);
-  border-left: 5px solid var(--reserved);
+  border-left: 4px solid var(--reserved);
   border-radius: 8px;
   background: #fff;
+  overflow: hidden;
 }
 
-.reserved-day-card__head,
-.reserved-slot-detail__head {
+.reserved-day-group__head {
   display: flex;
   align-items: start;
   justify-content: space-between;
   gap: 12px;
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--line);
+  background: #f8fbfa;
 }
 
-.reserved-day-card__head strong,
-.reserved-slot-detail__head strong {
+.reserved-day-group__head strong {
   display: block;
 }
 
-.reserved-day-card__head div > span,
-.reserved-slot-detail__head div > span {
+.reserved-day-group__head div > span {
   display: block;
   margin-top: 3px;
   color: var(--muted);
   font-size: .82rem;
 }
 
-.reserved-day-card__head > span,
-.reserved-slot-detail__head > span {
+.reserved-day-group__head > span {
   flex: 0 0 auto;
   padding: 5px 7px;
   border-radius: 999px;
@@ -1225,37 +1231,57 @@ select {
   white-space: nowrap;
 }
 
-.reserved-day-card__summary,
-.reserved-slot-detail {
+.reserved-slot-table {
   display: grid;
-  gap: 9px;
-  padding-top: 12px;
-  border-top: 1px solid var(--line);
 }
 
-.reserved-day-card__summary > strong,
-.reserved-slot-detail__grid strong {
-  display: block;
-  margin-bottom: 6px;
-  color: #35434a;
-  font-size: .78rem;
+.reserved-slot-row {
+  display: grid;
+  grid-template-columns: minmax(78px, .7fr) minmax(90px, .8fr) minmax(135px, 1.1fr) minmax(190px, 1.7fr) minmax(150px, 1.2fr);
+  align-items: start;
+  gap: 12px;
+  padding: 10px 16px;
+  border-top: 1px solid #eef2f4;
 }
 
-.reserved-day-card__chips {
+.reserved-slot-row:first-child {
+  border-top: 0;
+}
+
+.reserved-slot-row--head {
+  padding-top: 9px;
+  padding-bottom: 8px;
+  color: var(--muted);
+  background: #fff;
+  font-size: .7rem;
+  font-weight: 850;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+
+.reserved-slot-row > span {
+  color: #314047;
+}
+
+.reserved-slot-row > span strong {
+  color: var(--ink);
+}
+
+.reserved-slot-row__chips {
   display: flex;
   flex-wrap: wrap;
-  gap: 6px;
+  align-items: center;
+  gap: 5px;
 }
 
-.reserved-slot-list {
-  display: grid;
-  gap: 12px;
-}
-
-.reserved-slot-detail__grid {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 12px;
+.reserved-slot-row__count {
+  padding: 3px 7px;
+  border-radius: 999px;
+  color: #174c5a;
+  background: #dff0f4;
+  font-size: .72rem;
+  font-weight: 850;
+  white-space: nowrap;
 }
 
 button {
@@ -1355,7 +1381,6 @@ button:not(.day):hover {
   .date-results,
   .date-detail__slots,
   .boat-reserved__grid,
-  .reserved-slot-detail__grid,
   .source-grid {
     grid-template-columns: 1fr;
   }
@@ -1391,6 +1416,31 @@ button:not(.day):hover {
 
   .date-search-people .people {
     grid-template-columns: 1fr;
+  }
+
+  .reserved-day-group__head {
+    display: grid;
+  }
+
+  .reserved-slot-row {
+    grid-template-columns: 1fr;
+    gap: 7px;
+    padding: 12px 14px;
+  }
+
+  .reserved-slot-row--head {
+    display: none;
+  }
+
+  .reserved-slot-row [data-label]::before {
+    content: attr(data-label);
+    display: block;
+    margin-bottom: 3px;
+    color: var(--muted);
+    font-size: .68rem;
+    font-weight: 850;
+    letter-spacing: .08em;
+    text-transform: uppercase;
   }
 
   .section-head {
