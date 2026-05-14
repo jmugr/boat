@@ -5,6 +5,20 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>My Way Summer Planner</title>
     <link rel="stylesheet" href="styles.css">
+    <script>
+      window.umamiBeforeSendHandler = function(type, payload) {
+        try {
+          if (localStorage.getItem("is_my_device") === "true") {
+            return false;
+          }
+        } catch (_) {
+          // Ignore storage access errors and continue tracking.
+        }
+
+        return payload;
+      };
+    </script>
+    <script defer src="https://cloud.umami.is/script.js" data-website-id="29ac1f53-e8da-4030-aa93-c7ea40858ef0" data-before-send="umamiBeforeSendHandler"></script>
   </head>
   <body>
     <main class="shell">
