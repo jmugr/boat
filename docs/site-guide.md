@@ -4,7 +4,9 @@ This site helps pick the best summer event slots by comparing candidate dates an
 
 ## Files
 
-- `index.html`: page structure and controls.
+- `index.html`: reserved calendar homepage.
+- `summer-planner.html`: summer planner page structure and controls.
+- `reserved-calendar.html`: reserved calendar page kept as a direct link-compatible alias.
 - `styles.css`: layout, colors, responsive behavior, and calendar severity styles.
 - `app.js`: planner data, date ranking logic, sorting, filtering, and rendering.
 - `assets/jeanneau-sun-odyssey-45ds-hero.png`: header image.

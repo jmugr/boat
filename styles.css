@@ -1002,6 +1002,12 @@ select {
   background: var(--reserved);
 }
 
+.reserved-page .day[data-boat-reserved="true"] {
+  color: #fff;
+  border-color: var(--reserved);
+  background: var(--reserved);
+}
+
 .day.is-outside {
   visibility: hidden;
 }
@@ -1050,6 +1056,53 @@ select {
 
 .day-indicator--holiday {
   background: var(--holiday);
+}
+
+.reserved-special-icons {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  min-height: 18px;
+  min-width: 0;
+}
+
+.reserved-special-icon {
+  display: grid;
+  place-items: center;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  font-size: .72rem;
+  font-style: normal;
+  line-height: 1;
+}
+
+.reserved-special-icon img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.reserved-special-icon--holiday,
+.reserved-special-icon--special {
+  width: 8px;
+  height: 8px;
+}
+
+.reserved-special-icon--holiday {
+  background: var(--holiday);
+}
+
+.reserved-special-icon--special {
+  background: var(--special);
+}
+
+.reserved-special-icon--fireworks,
+.reserved-special-icon--disco,
+.reserved-special-icon--anchor {
+  border-radius: 0;
 }
 
 .day__meta {
@@ -1158,6 +1211,13 @@ select {
   background: var(--reserved);
   outline: 3px solid rgba(36, 88, 166, .24);
   outline-offset: 1px;
+}
+
+.reserved-page .day[data-boat-reserved="true"] .slot-pill[data-reserved-slot="true"] {
+  color: var(--reserved);
+  border-color: rgba(255, 255, 255, .88);
+  background: #fff;
+  outline: 0;
 }
 
 .slot-pill[data-reserved-slot="true"][data-special-slot="true"] {

@@ -105,6 +105,7 @@ const els = {
   specialSummary: document.querySelector("#specialSummary"),
   sourceGrid: document.querySelector("#sourceGrid"),
   reservedOnlyCalendar: document.querySelector("#reservedOnlyCalendar"),
+  reservedOnlyDateDetail: document.querySelector("#reservedOnlyDateDetail"),
   reservedOnlyList: document.querySelector("#reservedOnlyList")
 };
 
@@ -146,6 +147,7 @@ const holidays = [
   holiday("2026-05-25", "Memorial Day"),
   holiday("2026-06-19", "Juneteenth National Independence Day"),
   holiday("2026-07-03", "Independence Day observed"),
+  holiday("2026-07-04", "Independence Day"),
   holiday("2026-09-07", "Labor Day"),
   holiday("2026-10-12", "Columbus Day")
 ];
@@ -189,6 +191,7 @@ const climateNormals = {
   ]
 };
 const boatReservations = [
+  boatReservation("2026-06-05", "evening"),
   boatReservation("2026-06-09", "evening"),
   boatReservation("2026-06-16", "evening"),
   boatReservation("2026-06-19", "morning"),
@@ -1211,6 +1214,7 @@ function renderReservedOnlyPage() {
     cursor = new Date(cursor.getFullYear(), cursor.getMonth() + 1, 1);
   }
 
+  renderReservedOnlyDateDetail();
   els.reservedOnlyCalendar.innerHTML = months.map((month) => reservedOnlyMonthMarkup(month, start, end)).join("");
   els.reservedOnlyList.innerHTML = reservedDayGroups().map(reservedDayMarkup).join("");
 }
@@ -1224,6 +1228,8 @@ function reservedOnlyMonthMarkup(month, start, end) {
   const days = eachDay(toKey(visibleStart), toKey(visibleEnd)).map((date) => {
     const dateKey = toKey(date);
     const reservations = boatReservationsForDate(dateKey);
+    const holidayNames = reservations.length ? holidaysForWindow(date, 1) : [];
+    const specials = specialsForReservations(date, reservations);
     const reservedSlotIds = new Set(reservations.map((item) => item.slotId));
     const fullyBoatReserved = slots.every((slot) => reservedSlotIds.has(slot.id));
     const title = reservations.length
@@ -1231,13 +1237,13 @@ function reservedOnlyMonthMarkup(month, start, end) {
       : fullDateWithYear.format(date);
 
     return `
-      <button class="day" data-date="${dateKey}" data-level="0" data-special-date="false" data-fully-reserved="${fullyBoatReserved}" data-fully-boat-reserved="${fullyBoatReserved}" title="${escapeHtml(title)}">
+      <button class="day" data-date="${dateKey}" data-level="0" data-special-date="false" data-boat-reserved="${reservations.length > 0}" data-fully-reserved="${fullyBoatReserved}" data-fully-boat-reserved="${fullyBoatReserved}" aria-pressed="${dateKey === selectedDateKey}" title="${escapeHtml(title)}">
         <span class="day__head">
           <strong>${date.getDate()}</strong>
         </span>
-        <span></span>
+        ${reservedDaySpecialIconsMarkup(holidayNames, specials)}
         <span class="slot-list">
-          ${reservedOnlySlotSummaryMarkup(reservations, fullyBoatReserved)}
+          ${reservedOnlySlotSummaryMarkup(reservations)}
         </span>
       </button>
     `;
@@ -1255,17 +1261,133 @@ function reservedOnlyMonthMarkup(month, start, end) {
   `;
 }
 
-function reservedOnlySlotSummaryMarkup(reservations, fullyBoatReserved) {
-  if (!reservations.length || fullyBoatReserved) return "";
-  const reservation = reservations[0];
-  const slot = slots.find((candidate) => candidate.id === reservation.slotId);
-  if (!slot) return "";
+function renderReservedOnlyDateDetail() {
+  if (!els.reservedOnlyDateDetail) return;
+
+  if (!selectedDateKey) {
+    els.reservedOnlyDateDetail.innerHTML = `
+      <div class="date-detail__empty">
+        <strong>Select a date</strong>
+        <span>Click any calendar day to see reservation details.</span>
+      </div>
+    `;
+    return;
+  }
+
+  const date = parseDate(selectedDateKey);
+  const reservations = boatReservationsForDate(selectedDateKey).sort((a, b) => slotOrder(a.slotId) - slotOrder(b.slotId));
+  const holidayNames = reservations.length ? holidaysForWindow(date, 1) : [];
+  const specials = specialsForReservations(date, reservations);
+
+  els.reservedOnlyDateDetail.innerHTML = `
+    <div class="date-detail__head">
+      <div>
+        <p class="eyebrow">Selected Date</p>
+        <h3>${fullDate.format(date)}</h3>
+        ${selectedDateHolidayMarkup(holidayNames)}
+        ${climateMarkup(date)}
+      </div>
+      <span class="date-detail__count">${reservations.length ? `${reservations.length} ${reservations.length === 1 ? "slot" : "slots"}` : "Not reserved"}</span>
+    </div>
+    ${specials.length ? `
+      <div class="date-detail__specials">
+        <strong>Special events for our slot${reservations.length === 1 ? "" : "s"}</strong>
+        ${specials.map(specialDetailMarkup).join("")}
+      </div>
+    ` : ""}
+    ${reservations.length ? reservedSelectedSlotsMarkup(date, reservations) : `
+      <div class="date-detail__summary">
+        <span class="chip chip--clear">No boat reservation for this day</span>
+      </div>
+    `}
+  `;
+}
+
+function reservedSelectedSlotsMarkup(date, reservations) {
+  return `
+    <div class="reserved-slot-table reserved-slot-table--selected" role="table" aria-label="Reserved slots for ${fullDateWithYear.format(date)}">
+      <div class="reserved-slot-row reserved-slot-row--head" role="row">
+        <span>Slot</span>
+        <span>Time</span>
+        <span>OOT</span>
+        <span>Available</span>
+        <span>Special events</span>
+      </div>
+      ${reservations.map((item) => reservedSlotDetailMarkup(date, item)).join("")}
+    </div>
+  `;
+}
+
+function reservedDaySpecialIconsMarkup(holidayNames, specials) {
+  const icons = uniqueReservedSpecialIcons([
+    ...holidayNames.map((title) => ({ type: "holiday", label: "", title })),
+    ...specials.map(specialIcon)
+  ]);
+  if (!icons.length) return `<span class="reserved-special-icons"></span>`;
 
   return `
-    <span class="slot-pill" data-level="reserved" data-special-slot="false" data-reserved-slot="true" data-other-reserved-slot="false" data-search-result-slot="false" title="${escapeHtml(slotName(reservation.slotId))} reserved">
-      <span class="slot-pill__text">${escapeHtml(slot.shortName)}</span>
+    <span class="reserved-special-icons" aria-label="${escapeHtml(icons.map((item) => item.title).join(", "))}">
+      ${icons.map(reservedSpecialIconMarkup).join("")}
     </span>
   `;
+}
+
+function reservedSpecialIconMarkup(item) {
+  const image = item.src
+    ? `<img src="${escapeHtml(item.src)}" alt="" aria-hidden="true">`
+    : escapeHtml(item.label);
+  return `<i class="reserved-special-icon reserved-special-icon--${item.type}" title="${escapeHtml(item.title)}">${image}</i>`;
+}
+
+function uniqueReservedSpecialIcons(icons) {
+  const seen = new Set();
+  return icons.filter((item) => {
+    const key = `${item.type}:${item.title.split(":")[0].replace(/ observed$/i, "").toLowerCase()}`;
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+}
+
+function specialsForReservations(date, reservations) {
+  if (!reservations.length) return [];
+  const reservedSlots = reservations
+    .map((reservation) => slots.find((slot) => slot.id === reservation.slotId))
+    .filter(Boolean);
+
+  return specialSlotsForDate(date).filter((item) => {
+    if (isHolidaySpecial(item)) return false;
+    if (!item.startTime) return true;
+    return reservedSlots.some((slot) => specialOverlapsSlot(date, slot, item));
+  });
+}
+
+function isHolidaySpecial(item) {
+  const holidayTitle = holidayLookup.get(item.date);
+  if (!holidayTitle) return false;
+  const specialTitle = item.title.toLowerCase();
+  return holidayTitle.toLowerCase().replace(/ observed$/, "") === specialTitle;
+}
+
+function specialIcon(item) {
+  const title = item.title.toLowerCase();
+  if (title.includes("fireworks")) return { type: "fireworks", label: "", src: "assets/icons8-firework-explosion-100.png", title: `${item.title}: ${specialTimeLabel(item)}` };
+  if (title.includes("chris lake")) return { type: "disco", label: "", src: "assets/icons8-disco-100.png", title: `${item.title}: ${specialTimeLabel(item)}` };
+  if (title.includes("chicago scene") || title.includes("blvckscene")) return { type: "anchor", label: "", src: "assets/icons8-anchor-90.png", title: `${item.title}: ${specialTimeLabel(item)}` };
+  return { type: "special", label: "", title: `${item.title}: ${specialTimeLabel(item)}` };
+}
+
+function reservedOnlySlotSummaryMarkup(reservations) {
+  return reservations.map((reservation) => {
+    const slot = slots.find((candidate) => candidate.id === reservation.slotId);
+    if (!slot) return "";
+
+    return `
+      <span class="slot-pill" data-level="reserved" data-special-slot="false" data-reserved-slot="true" data-other-reserved-slot="false" data-search-result-slot="false" title="${escapeHtml(slotName(reservation.slotId))} reserved">
+        <span class="slot-pill__text">${escapeHtml(slot.shortName)}</span>
+      </span>
+    `;
+  }).join("");
 }
 
 function monthMarkup(month, people, start, end, searchResultSlots) {
@@ -1598,7 +1720,11 @@ function loadPlanner() {
       planner.people = saved.map(normalizePerson);
     }
   } catch {
-    localStorage.removeItem(storageKey);
+    try {
+      localStorage.removeItem(storageKey);
+    } catch {
+      // Storage can be unavailable on local file pages; keep the built-in data.
+    }
   }
   defaultPeople.forEach(ensurePersonRanges);
   ensurePersonRanges(joeRennerDefaults);
@@ -1691,6 +1817,13 @@ function boot() {
   if (els.reservedOnlyCalendar && els.reservedOnlyList) {
     renderSource();
     renderReservedOnlyPage();
+    els.reservedOnlyCalendar.addEventListener("click", (event) => {
+      const day = event.target.closest(".day[data-date]");
+      if (!day) return;
+      selectedDateKey = day.dataset.date;
+      renderReservedOnlyPage();
+      els.reservedOnlyDateDetail?.scrollIntoView({ behavior: "smooth", block: "start" });
+    });
     return;
   }
 

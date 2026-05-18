@@ -2,7 +2,7 @@
 
 Static summer planning app for comparing potential boat/event dates against out-of-town availability.
 
-Open `index.html` directly in a browser. The app has no build step.
+Open `index.html` directly in a browser for the reserved calendar homepage. The summer planner is available at `summer-planner.html`. The app has no build step.
 
 ## What It Does
 
@@ -17,7 +17,9 @@ Open `index.html` directly in a browser. The app has no build step.
 
 ## Main Files
 
-- `index.html`: page structure and default controls.
+- `index.html`: reserved calendar homepage.
+- `summer-planner.html`: summer planner page structure and default controls.
+- `reserved-calendar.html`: reserved calendar page kept as a direct link-compatible alias.
 - `styles.css`: layout, calendar styling, special, weekend, holiday, and responsive behavior.
 - `app.js`: OOT data, holiday data, special dates, conflict logic, ranking, and rendering.
 - `docs/site-guide.md`: current behavior and implementation guide.
