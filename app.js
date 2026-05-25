@@ -1498,7 +1498,7 @@ function editableProfileGuestOfOptionsMarkup(selectedName = "") {
 function profileOptionsMarkup(selectedProfileId = "") {
   const profiles = allRsvpProfiles();
   return `
-    <option value="">Select profile</option>
+    <option value="">Create new profile</option>
     ${profiles.map((profile) => `
       <option value="${escapeHtml(profile.id)}"${profile.id === selectedProfileId ? " selected" : ""}>
         ${escapeHtml(profile.name)} - ${escapeHtml(guestOfDisplayLabel(profile.guestOf))}
@@ -1666,7 +1666,7 @@ function renderProfileSection() {
     <form class="profile-form" id="rsvpProfileForm" novalidate>
       <input type="hidden" name="profileId">
       <div class="field-row field-row--wide">
-        <label for="profileSelector">Profile</label>
+        <label for="profileSelector">Select your profile</label>
         <select id="profileSelector" name="selectedProfile">${profileOptionsMarkup(rsvpState.selectedProfileId)}</select>
       </div>
       <div class="field-row">
@@ -1683,7 +1683,6 @@ function renderProfileSection() {
       </div>
       <p class="rsvp-form__message" id="rsvpProfileMessage" aria-live="polite">${rsvpState.profilesError ? "Custom profiles unavailable." : ""}</p>
       <div class="rsvp-form__actions">
-        <button class="ghost-button" type="button" id="rsvpProfileClear">New</button>
         <button type="submit">Save profile</button>
       </div>
     </form>
@@ -1692,6 +1691,7 @@ function renderProfileSection() {
   if (!existing) {
     document.querySelector(".reserved-page")?.prepend(section);
   }
+  section.querySelector("#rsvpProfileForm")?.addEventListener("submit", submitProfileForm);
 }
 
 function resetProfileForm() {
@@ -2619,12 +2619,6 @@ async function boot() {
         closeRsvpDialog();
         return;
       }
-      const profileClearButton = event.target.closest("#rsvpProfileClear");
-      if (profileClearButton) {
-        resetProfileForm();
-        renderReservedOnlyPage();
-        return;
-      }
       const removeButton = event.target.closest("[data-rsvp-remove]");
       if (removeButton) {
         removeRsvpSummary(removeButton.dataset.rsvpDate, removeButton.dataset.rsvpSlot, removeButton.dataset.rsvpRemove);
@@ -2645,11 +2639,6 @@ async function boot() {
         resetProfileForm();
       }
       renderReservedOnlyPage();
-    });
-    document.addEventListener("submit", (event) => {
-      if (event.target.matches("#rsvpProfileForm")) {
-        submitProfileForm(event);
-      }
     });
     return;
   }
