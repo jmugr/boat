@@ -2,7 +2,10 @@ const planner = {
   year: 2026,
   people: [
     {
-      name: "Aaron",
+      id: "aaron-vander-linde",
+      name: "Aaron Vander Linde",
+      shortName: "Aaron",
+      contact: "6307779420",
       ranges: [
         slotRange("2026-06-03", "evening"),
         range("2026-06-12", "2026-06-12", "June 12"),
@@ -13,7 +16,10 @@ const planner = {
       ]
     },
     {
-      name: "Sean",
+      id: "sean-kilbane",
+      name: "Sean Kilbane",
+      shortName: "Sean",
+      contact: "4402428580",
       ranges: [
         range("2026-07-04", "2026-07-04", "July 4th"),
         range("2026-07-17", "2026-07-19", "July 17th weekend"),
@@ -22,7 +28,10 @@ const planner = {
       ]
     },
     {
-      name: "Jerry",
+      id: "jerry-hand",
+      name: "Jerry Hand",
+      shortName: "Jerry",
+      contact: "7343652707",
       ranges: [
         range("2026-05-29", "2026-06-01", "5/29-6/1"),
         range("2026-06-18", "2026-06-21", "6/18-6/21"),
@@ -33,7 +42,10 @@ const planner = {
       ]
     },
     {
-      name: "Johnny",
+      id: "johnny-lekosiotis",
+      name: "Johnny Lekosiotis",
+      shortName: "Johnny",
+      contact: "2488606056",
       ranges: [
         range("2026-05-01", "2026-05-31", "May is very rough", "soft"),
         range("2026-06-05", "2026-06-07", "6/5-6/7"),
@@ -41,7 +53,10 @@ const planner = {
       ]
     },
     {
-      name: "Brad",
+      id: "brad-jamiolkowski",
+      name: "Brad Jamiolkowski",
+      shortName: "Brad",
+      contact: "4124182666",
       ranges: [
         range("2026-06-07", "2026-06-07", "June 7"),
         range("2026-06-12", "2026-06-12", "June 12"),
@@ -52,7 +67,10 @@ const planner = {
       ]
     },
     {
-      name: "Joe",
+      id: "joe-renner",
+      name: "Joe Renner",
+      shortName: "Joe",
+      contact: "8104239965",
       ranges: [
         slotRange("2026-05-30", "evening"),
         slotRange("2026-06-03", "evening"),
@@ -68,20 +86,6 @@ const planner = {
 };
 
 const defaultPeople = planner.people.map(normalizePerson);
-
-const joeRennerDefaults = {
-  name: "Joe",
-  ranges: [
-    slotRange("2026-05-30", "evening"),
-    slotRange("2026-06-03", "evening"),
-    slotRange("2026-06-12", "evening"),
-    range("2026-06-27", "2026-06-28"),
-    slotRange("2026-07-11", "evening"),
-    range("2026-07-17", "2026-07-19"),
-    range("2026-08-17", "2026-09-01"),
-    range("2026-09-04", "2026-09-07")
-  ]
-};
 
 const els = {
   startDate: document.querySelector("#startDate"),
@@ -116,6 +120,8 @@ const defaultStartDate = "2026-05-24";
 const defaultEndDate = "2026-10-18";
 const captains = new Set(["Joe", "Sean"]);
 const captainOrder = ["Joe", "Sean"];
+const crewGuestOfNone = "N/A";
+const crewProfileIdPrefix = "crew:";
 let selectedDateKey = null;
 const monthNames = new Intl.DateTimeFormat("en-US", { month: "long", year: "numeric" });
 const compactDate = new Intl.DateTimeFormat("en-US", { month: "short", day: "numeric" });
@@ -525,6 +531,7 @@ function applyRsvpProfiles(profiles) {
   rsvpState.profiles = profiles
     .map(normalizeRsvpProfile)
     .filter(Boolean)
+    .filter((profile) => !isCanonicalCrewProfileDoc(profile))
     .sort((a, b) => a.name.localeCompare(b.name) || a.guestOf.localeCompare(b.guestOf));
 }
 
@@ -536,6 +543,10 @@ function normalizeRsvpProfile(profile) {
     guestOf: String(profile.guestOf).trim(),
     contact: String(profile.contact).trim()
   };
+}
+
+function isCanonicalCrewProfileDoc(profile) {
+  return planner.people.some((person) => person.id === profile.id);
 }
 
 async function loadFirebaseSummaries(api) {
@@ -765,7 +776,7 @@ function conflictsForSlot(date, slot, length, people = selectedPeople()) {
     people.map((person) =>
       person.ranges
         .filter((item) => blocksSlot(date, slot, length, item))
-        .map((item) => ({ person: person.name, ...item }))
+        .map((item) => ({ person: crewKey(person), ...item }))
     )
   );
 }
@@ -788,7 +799,7 @@ function renderFilters() {
   els.peopleFilters.innerHTML = planner.people
     .map((person, index) => `
       <label class="person-filter">
-        <span>${escapeHtml(person.name)}</span>
+        <span>${escapeHtml(crewKey(person))}</span>
         <input type="checkbox" data-person-index="${index}" checked>
       </label>
     `)
@@ -1274,7 +1285,7 @@ function boatReservedMarkup(item, people) {
 
   const conflicts = uniqueConflicts(conflictsForSlot(date, slot, 1, people));
   const unavailable = new Set(conflicts);
-  const available = people.map((person) => person.name).filter((name) => !unavailable.has(name));
+  const available = people.map(crewKey).filter((name) => !unavailable.has(name));
   const specials = specialSlotsForWindow(date, slot, 1);
 
   return `
@@ -1362,8 +1373,9 @@ function reservedSlotDetailMarkup(date, item) {
   const isOpen = slotData?.status === "open";
   const remaining = remainingCapacityForSlot(item);
   const hasCapacity = remaining === null || remaining > 0;
-  const buttonLabel = isOpen && hasCapacity ? "RSVP" : "Full";
-  const buttonDisabled = !isOpen || !hasCapacity || !firebaseSlotState.configured;
+  const hasSelectedProfile = Boolean(selectedRsvpProfile());
+  const buttonLabel = !hasSelectedProfile ? "Select profile" : isOpen && hasCapacity ? "RSVP" : "Full";
+  const buttonDisabled = !hasSelectedProfile || !isOpen || !hasCapacity || !firebaseSlotState.configured;
 
   return `
     <div class="reserved-slot-row" role="row">
@@ -1391,7 +1403,7 @@ function rsvpSummaryChips(item) {
   if (summaries.length) {
     return summaries
       .map((summary) => {
-        const guestOfLabel = summary.guestOf ? `Guest of ${summary.guestOf}` : "Guest of crew";
+        const guestOfLabel = guestOfDisplayLabel(summary.guestOf);
         return `
           <span class="rsvp-chip">
             <span>${escapeHtml(summary.name)} <small>${escapeHtml(guestOfLabel)}</small></span>
@@ -1407,28 +1419,34 @@ function rsvpSummaryChips(item) {
 }
 
 function crewOptionsMarkup(selectedName = "") {
+  const options = [
+    { value: crewGuestOfNone, label: "Boat crew" },
+    ...crewGuestOfOptions()
+  ];
   return `
     <option value="">Select crew member</option>
-    ${planner.people.map((person) => {
-      const name = person.name;
-      return `<option value="${escapeHtml(name)}"${name === selectedName ? " selected" : ""}>${escapeHtml(name)}</option>`;
-    }).join("")}
+    ${options.map((option) => `<option value="${escapeHtml(option.value)}"${option.value === selectedName ? " selected" : ""}>${escapeHtml(option.label)}</option>`).join("")}
   `;
 }
 
 function profileOptionsMarkup(selectedProfileId = "") {
+  const profiles = allRsvpProfiles();
   return `
     <option value="">Select profile</option>
-    ${rsvpState.profiles.map((profile) => `
+    ${profiles.map((profile) => `
       <option value="${escapeHtml(profile.id)}"${profile.id === selectedProfileId ? " selected" : ""}>
-        ${escapeHtml(profile.name)} - guest of ${escapeHtml(profile.guestOf)}
+        ${escapeHtml(profile.name)} - ${escapeHtml(guestOfDisplayLabel(profile.guestOf))}
       </option>
     `).join("")}
   `;
 }
 
 function profileById(profileId) {
-  return rsvpState.profiles.find((profile) => profile.id === profileId) || null;
+  return allRsvpProfiles().find((profile) => profile.id === profileId) || null;
+}
+
+function selectedRsvpProfile() {
+  return profileById(rsvpState.selectedProfileId);
 }
 
 function profileFormValues(form) {
@@ -1445,9 +1463,13 @@ function setFormFromProfile(form, profile) {
   form.elements.contact.value = profile.contact;
 }
 
+function formControl(form, name) {
+  return form?.elements?.namedItem(name) || form?.elements?.[name] || null;
+}
+
 function upsertLocalProfile(profile) {
   const normalized = normalizeRsvpProfile(profile);
-  if (!normalized) return;
+  if (!normalized || isCanonicalCrewProfileDoc(normalized)) return;
   const index = rsvpState.profiles.findIndex((item) => item.id === normalized.id);
   if (index === -1) {
     rsvpState.profiles = [...rsvpState.profiles, normalized];
@@ -1473,28 +1495,20 @@ function ensureRsvpDialog() {
         <form class="rsvp-form" id="rsvpForm" novalidate>
           <input type="hidden" name="date">
           <input type="hidden" name="slotId">
-          <div class="field-row field-row--wide">
-            <label for="rsvpProfile">Profile</label>
-            <select id="rsvpProfile" name="profileId"></select>
-          </div>
           <div class="field-row">
             <label for="rsvpName">Name</label>
-            <input id="rsvpName" name="name" type="text" autocomplete="name" required maxlength="100">
+            <input id="rsvpName" name="name" type="text" autocomplete="name" required maxlength="100" readonly>
           </div>
           <div class="field-row">
             <label for="rsvpGuestOf">Guest of</label>
-            <select id="rsvpGuestOf" name="guestOf" required>
+            <select id="rsvpGuestOf" name="guestOf" required disabled>
               ${crewOptionsMarkup()}
             </select>
           </div>
           <div class="field-row">
             <label for="rsvpContact">Phone number</label>
-            <input id="rsvpContact" name="contact" type="tel" autocomplete="tel" required maxlength="40">
+            <input id="rsvpContact" name="contact" type="tel" autocomplete="tel" required maxlength="40" readonly>
           </div>
-          <label class="toggle field-row--wide rsvp-profile-save">
-            <input id="rsvpSaveProfile" name="saveProfile" type="checkbox">
-            <span>Save or update this profile</span>
-          </label>
           <p class="rsvp-form__message" id="rsvpMessage" aria-live="polite"></p>
           <div class="rsvp-form__actions">
             <button class="ghost-button" type="button" data-rsvp-close>Cancel</button>
@@ -1549,6 +1563,11 @@ function openRsvpDialog(date, slotId) {
   ensureRsvpDialog();
   const reservation = boatReservations.find((item) => item.date === date && item.slotId === slotId);
   if (!reservation) return;
+  const selectedProfile = selectedRsvpProfile();
+  if (!selectedProfile) {
+    document.querySelector("#rsvpProfilesSection")?.scrollIntoView({ behavior: "smooth", block: "start" });
+    return;
+  }
 
   const slot = slots.find((candidate) => candidate.id === slotId);
   const dialog = document.querySelector("#rsvpDialog");
@@ -1559,16 +1578,12 @@ function openRsvpDialog(date, slotId) {
   form.elements.date.value = date;
   form.elements.slotId.value = slotId;
   form.elements.guestOf.innerHTML = crewOptionsMarkup();
-  form.elements.profileId.innerHTML = profileOptionsMarkup(rsvpState.selectedProfileId);
-  const selectedProfile = profileById(rsvpState.selectedProfileId);
-  if (selectedProfile) {
-    setFormFromProfile(form, selectedProfile);
-  }
+  setFormFromProfile(form, selectedProfile);
   form.querySelector("[type='submit']").disabled = false;
   slotLabel.textContent = `${fullDateWithYear.format(parseDate(date))} - ${slot ? `${slot.name} - ${slot.timeLabel}` : slotId}`;
   message.textContent = rsvpState.message || "";
   dialog.hidden = false;
-  form.elements.name.focus();
+  form.querySelector("[type='submit']").focus();
 }
 
 function closeRsvpDialog() {
@@ -1630,6 +1645,7 @@ function renderProfileSection() {
   if (!els.reservedOnlyList) return;
   const existing = document.querySelector("#rsvpProfilesSection");
   const section = existing || document.createElement("section");
+  const profiles = allRsvpProfiles();
   section.className = "profile-section";
   section.id = "rsvpProfilesSection";
   section.setAttribute("aria-labelledby", "rsvpProfilesTitle");
@@ -1639,10 +1655,14 @@ function renderProfileSection() {
         <p class="eyebrow">Profiles</p>
         <h2 id="rsvpProfilesTitle">RSVP profiles</h2>
       </div>
-      <span class="result-count">${rsvpState.profiles.length} ${rsvpState.profiles.length === 1 ? "profile" : "profiles"}</span>
+      <span class="result-count">${profiles.length} ${profiles.length === 1 ? "profile" : "profiles"}</span>
     </div>
     <form class="profile-form" id="rsvpProfileForm" novalidate>
       <input type="hidden" name="profileId">
+      <div class="field-row field-row--wide">
+        <label for="profileSelector">Profile</label>
+        <select id="profileSelector" name="selectedProfile">${profileOptionsMarkup(rsvpState.selectedProfileId)}</select>
+      </div>
       <div class="field-row">
         <label for="profileName">Name</label>
         <input id="profileName" name="name" type="text" autocomplete="name" required maxlength="100">
@@ -1655,33 +1675,17 @@ function renderProfileSection() {
         <label for="profileContact">Phone number</label>
         <input id="profileContact" name="contact" type="tel" autocomplete="tel" required maxlength="40">
       </div>
-      <p class="rsvp-form__message" id="rsvpProfileMessage" aria-live="polite">${rsvpState.profilesError ? "Profiles unavailable." : ""}</p>
+      <p class="rsvp-form__message" id="rsvpProfileMessage" aria-live="polite">${rsvpState.profilesError ? "Custom profiles unavailable." : ""}</p>
       <div class="rsvp-form__actions">
         <button class="ghost-button" type="button" id="rsvpProfileClear">New</button>
         <button type="submit">Save profile</button>
       </div>
     </form>
-    <div class="profile-list" id="rsvpProfileList">
-      ${rsvpState.profiles.length ? rsvpState.profiles.map(profileCardMarkup).join("") : `<span class="chip chip--clear">No profiles yet</span>`}
-    </div>
   `;
 
   if (!existing) {
-    els.reservedOnlyList.insertAdjacentElement("beforebegin", section);
+    document.querySelector(".reserved-page")?.prepend(section);
   }
-}
-
-function profileCardMarkup(profile) {
-  return `
-    <article class="profile-card">
-      <div>
-        <strong>${escapeHtml(profile.name)}</strong>
-        <span>Guest of ${escapeHtml(profile.guestOf)}</span>
-        <span>${escapeHtml(profile.contact)}</span>
-      </div>
-      <button class="ghost-button" type="button" data-profile-edit="${escapeHtml(profile.id)}">Edit</button>
-    </article>
-  `;
 }
 
 function resetProfileForm() {
@@ -1689,21 +1693,46 @@ function resetProfileForm() {
   if (!form) return;
   form.reset();
   form.elements.profileId.value = "";
+  rsvpState.selectedProfileId = "";
+  formControl(form, "selectedProfile").innerHTML = profileOptionsMarkup();
   form.elements.guestOf.innerHTML = crewOptionsMarkup();
+  setProfileFormReadOnly(form, false);
   document.querySelector("#rsvpProfileMessage").textContent = "";
 }
 
 function fillProfileForm(profile) {
   const form = document.querySelector("#rsvpProfileForm");
   if (!form || !profile) return;
+  formControl(form, "selectedProfile").innerHTML = profileOptionsMarkup(profile.id);
+  if (profile.readOnly) {
+    form.elements.profileId.value = "";
+    form.elements.name.value = profile.name;
+    form.elements.guestOf.innerHTML = crewOptionsMarkup(profile.guestOf);
+    form.elements.contact.value = profile.contact;
+    setProfileFormReadOnly(form, true);
+    document.querySelector("#rsvpProfileMessage").textContent = "Crew profiles are built in and cannot be edited.";
+    return;
+  }
   form.elements.profileId.value = profile.id;
   form.elements.name.value = profile.name;
   form.elements.guestOf.innerHTML = crewOptionsMarkup(profile.guestOf);
   form.elements.contact.value = profile.contact;
+  setProfileFormReadOnly(form, false);
   document.querySelector("#rsvpProfileMessage").textContent = "";
 }
 
+function setProfileFormReadOnly(form, readOnly) {
+  form.elements.name.disabled = readOnly;
+  form.elements.guestOf.disabled = readOnly;
+  form.elements.contact.disabled = readOnly;
+  form.querySelector("[type='submit']").disabled = readOnly;
+}
+
 async function saveProfileFromValues(values, profileId = "") {
+  const existingProfile = profileById(profileId);
+  if (existingProfile?.readOnly) {
+    throw new Error("Crew profiles cannot be edited.");
+  }
   const api = await import("./firebase-client.js");
   if (profileId) {
     await api.updateRsvpProfile(profileId, values);
@@ -1733,6 +1762,7 @@ async function submitProfileForm(event) {
     const profileId = await saveProfileFromValues(values, form.elements.profileId.value);
     rsvpState.selectedProfileId = profileId;
     renderProfileSection();
+    renderReservedOnlyPage();
     fillProfileForm(profileById(profileId));
     document.querySelector("#rsvpProfileMessage").textContent = "Profile saved.";
   } catch (error) {
@@ -1867,14 +1897,6 @@ async function submitRsvpForm(event) {
   try {
     const api = await import("./firebase-client.js");
     const rsvpId = await api.createRsvp(values);
-    if (form.elements.saveProfile.checked) {
-      try {
-        rsvpState.selectedProfileId = await saveProfileFromValues(values, form.elements.profileId.value);
-        renderProfileSection();
-      } catch (profileError) {
-        console.error("Unable to save RSVP profile.", profileError);
-      }
-    }
     addOptimisticSummary(reservation, values, rsvpId);
     rsvpState.message = "RSVP confirmed.";
     renderReservedOnlyPage();
@@ -2403,7 +2425,7 @@ function sourceCardMarkup(person) {
   return `
     <article class="source-card">
       <div class="source-card__head">
-        <h3>${escapeHtml(person.name)}</h3>
+        <h3>${escapeHtml(crewKey(person))}</h3>
         <span>${ootDayCount(person)} OOT days</span>
       </div>
       <ul>
@@ -2450,31 +2472,33 @@ function loadPlanner() {
     }
   }
   defaultPeople.forEach(ensurePersonRanges);
-  ensurePersonRanges(joeRennerDefaults);
   sortPeople();
 }
 
 function sortPeople() {
   planner.people.sort((a, b) => {
-    const aCaptainIndex = captainOrder.indexOf(a.name);
-    const bCaptainIndex = captainOrder.indexOf(b.name);
+    const aCaptainIndex = captainOrder.indexOf(crewKey(a));
+    const bCaptainIndex = captainOrder.indexOf(crewKey(b));
     if (aCaptainIndex !== -1 || bCaptainIndex !== -1) {
       if (aCaptainIndex === -1) return 1;
       if (bCaptainIndex === -1) return -1;
       return aCaptainIndex - bCaptainIndex;
     }
-    return a.name.localeCompare(b.name);
+    return crewKey(a).localeCompare(crewKey(b));
   });
 }
 
 function ensurePersonRanges(defaultPerson) {
-  const existing = planner.people.find((person) => firstName(person.name).toLowerCase() === defaultPerson.name.toLowerCase());
+  const existing = planner.people.find((person) => crewKey(person).toLowerCase() === crewKey(defaultPerson).toLowerCase());
   if (!existing) {
     planner.people.push(normalizePerson(defaultPerson));
     return;
   }
 
   existing.name = defaultPerson.name;
+  existing.id = defaultPerson.id;
+  existing.shortName = defaultPerson.shortName;
+  existing.contact = defaultPerson.contact;
   for (const defaultRange of defaultPerson.ranges) {
     const hasRange = existing.ranges.some(
       (item) =>
@@ -2490,14 +2514,88 @@ function ensurePersonRanges(defaultPerson) {
 }
 
 function normalizePerson(person) {
+  const name = String(person?.name || "Unnamed").trim() || "Unnamed";
+  const shortName = String(person?.shortName || firstName(name)).trim() || firstName(name);
   return {
-    name: firstName(person.name),
-    ranges: Array.isArray(person.ranges) ? person.ranges.map(normalizeRange).filter(Boolean) : []
+    id: String(person?.id || slugify(name)).trim(),
+    name,
+    shortName,
+    contact: String(person?.contact || "").trim(),
+    ranges: Array.isArray(person?.ranges) ? person.ranges.map(normalizeRange).filter(Boolean) : []
   };
 }
 
 function firstName(name) {
   return String(name || "Unnamed").trim().split(/\s+/)[0] || "Unnamed";
+}
+
+function crewKey(person) {
+  return String(person?.shortName || firstName(person?.name)).trim() || "Unnamed";
+}
+
+function crewDisplayName(person) {
+  return String(person?.name || crewKey(person)).trim() || crewKey(person);
+}
+
+function crewGuestOfOptions() {
+  return planner.people.map((person) => ({
+    value: crewKey(person),
+    label: crewDisplayName(person)
+  }));
+}
+
+function crewRsvpProfiles() {
+  return planner.people
+    .filter((person) => person.id && person.contact)
+    .map((person) => ({
+      id: person.id,
+      name: crewDisplayName(person),
+      guestOf: crewGuestOfNone,
+      contact: person.contact
+    }));
+}
+
+function builtInCrewProfiles() {
+  return crewRsvpProfiles().map((profile) => ({
+    ...profile,
+    id: crewProfileId(profile.id),
+    sourceId: profile.id,
+    readOnly: true
+  }));
+}
+
+function editableRsvpProfiles() {
+  return rsvpState.profiles.map((profile) => ({
+    ...profile,
+    readOnly: false
+  }));
+}
+
+function allRsvpProfiles() {
+  return [
+    ...builtInCrewProfiles(),
+    ...editableRsvpProfiles()
+  ].sort((a, b) => {
+    if (a.readOnly !== b.readOnly) return a.readOnly ? -1 : 1;
+    return a.name.localeCompare(b.name) || a.guestOf.localeCompare(b.guestOf);
+  });
+}
+
+function crewProfileId(id) {
+  return `${crewProfileIdPrefix}${id}`;
+}
+
+function guestOfDisplayLabel(guestOf) {
+  if (guestOf === crewGuestOfNone) return "Boat crew";
+  return guestOf ? `Guest of ${guestOf}` : "Guest of crew";
+}
+
+function slugify(value) {
+  return String(value || "")
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
 }
 
 function normalizeRange(item) {
@@ -2566,17 +2664,12 @@ async function boot() {
       const profileClearButton = event.target.closest("#rsvpProfileClear");
       if (profileClearButton) {
         resetProfileForm();
+        renderReservedOnlyPage();
         return;
       }
       const editButton = event.target.closest("[data-rsvp-edit]");
       if (editButton) {
         openRsvpManageDialog(editButton.dataset.rsvpDate, editButton.dataset.rsvpSlot, editButton.dataset.rsvpEdit);
-        return;
-      }
-      const profileEditButton = event.target.closest("[data-profile-edit]");
-      if (profileEditButton) {
-        fillProfileForm(profileById(profileEditButton.dataset.profileEdit));
-        document.querySelector("#rsvpProfilesSection")?.scrollIntoView({ behavior: "smooth", block: "start" });
         return;
       }
       const removeButton = event.target.closest("[data-rsvp-remove]");
@@ -2589,12 +2682,16 @@ async function boot() {
       openRsvpDialog(rsvpButton.dataset.rsvpDate, rsvpButton.dataset.rsvpSlot);
     });
     document.querySelector("#rsvpForm")?.addEventListener("submit", submitRsvpForm);
-    document.querySelector("#rsvpProfile")?.addEventListener("input", (event) => {
+    document.addEventListener("input", (event) => {
+      if (!event.target.matches("#profileSelector")) return;
       const profile = profileById(event.target.value);
       rsvpState.selectedProfileId = event.target.value;
       if (profile) {
-        setFormFromProfile(document.querySelector("#rsvpForm"), profile);
+        fillProfileForm(profile);
+      } else {
+        resetProfileForm();
       }
+      renderReservedOnlyPage();
     });
     document.querySelector("#rsvpManageForm")?.addEventListener("submit", submitRsvpManageForm);
     document.addEventListener("submit", (event) => {

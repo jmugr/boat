@@ -22,6 +22,10 @@ service cloud.firestore {
       return name in ['Aaron', 'Sean', 'Jerry', 'Johnny', 'Brad', 'Joe'];
     }
 
+    function isValidGuestOf(name) {
+      return name == 'N/A' || isValidCrewName(name);
+    }
+
     function isValidRsvpData(data) {
       return
         hasOnly(data, [
@@ -44,7 +48,7 @@ service cloud.firestore {
         ]) &&
         data.slotId is string &&
         data.name is string &&
-        isValidCrewName(data.guestOf) &&
+        isValidGuestOf(data.guestOf) &&
         data.contact is string &&
         (!('alertEmailSentAt' in data) || data.alertEmailSentAt is timestamp) &&
         (!('alertEmailError' in data) || data.alertEmailError is string) &&
@@ -69,7 +73,7 @@ service cloud.firestore {
         ]) &&
         data.slotId is string &&
         data.name is string &&
-        isValidCrewName(data.guestOf) &&
+        isValidGuestOf(data.guestOf) &&
         isValidRsvpStatus(data.status);
     }
 
@@ -90,7 +94,7 @@ service cloud.firestore {
           'updatedAt'
         ]) &&
         data.name is string &&
-        isValidCrewName(data.guestOf) &&
+        isValidGuestOf(data.guestOf) &&
         data.contact is string &&
         data.createdAt is timestamp &&
         data.updatedAt is timestamp;
