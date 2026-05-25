@@ -1256,6 +1256,20 @@ select {
   gap: 16px;
 }
 
+.reserved-detail-group {
+  display: grid;
+  gap: 12px;
+}
+
+.section-head--subtle {
+  margin-bottom: 0;
+}
+
+.section-head--subtle h3 {
+  margin: 0;
+  font-size: 1rem;
+}
+
 .reserved-day-group {
   border: 1px solid var(--line);
   border-left: 4px solid var(--reserved);

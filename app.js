@@ -122,6 +122,7 @@ const captains = new Set(["Joe", "Sean"]);
 const captainOrder = ["Joe", "Sean"];
 const crewGuestOfNone = "N/A";
 const crewProfileIdPrefix = "crew:";
+const seededCrewRsvpIdPrefix = "crew_going_";
 let selectedDateKey = null;
 const monthNames = new Intl.DateTimeFormat("en-US", { month: "long", year: "numeric" });
 const compactDate = new Intl.DateTimeFormat("en-US", { month: "short", day: "numeric" });
@@ -1334,6 +1335,64 @@ function reservedDayGroups() {
     }));
 }
 
+function reservedDayGroupsForReservations(reservations) {
+  const groups = new Map();
+  for (const reservation of reservations) {
+    if (!groups.has(reservation.date)) groups.set(reservation.date, []);
+    groups.get(reservation.date).push(reservation);
+  }
+
+  return [...groups.entries()]
+    .sort(([dateA], [dateB]) => dateA.localeCompare(dateB))
+    .map(([date, groupReservations]) => ({
+      date,
+      reservations: groupReservations.sort((a, b) => slotOrder(a.slotId) - slotOrder(b.slotId))
+    }));
+}
+
+function reservedProfileBuckets() {
+  const going = [];
+  const notRsvped = [];
+
+  for (const reservation of boatReservations) {
+    if (selectedProfileIsGoing(reservation)) {
+      going.push(reservation);
+    } else {
+      notRsvped.push(reservation);
+    }
+  }
+
+  return { going, notRsvped };
+}
+
+function reservedProfileBucketMarkup(title, reservations, emptyLabel) {
+  return `
+    <section class="reserved-detail-group" aria-label="${escapeHtml(title)}">
+      <div class="section-head section-head--subtle">
+        <div>
+          <p class="eyebrow">${escapeHtml(title)}</p>
+          <h3>${reservations.length} ${reservations.length === 1 ? "slot" : "slots"}</h3>
+        </div>
+      </div>
+      ${reservations.length
+        ? reservedDayGroupsForReservations(reservations).map(reservedDayMarkup).join("")
+        : `<span class="chip chip--clear">${escapeHtml(emptyLabel)}</span>`}
+    </section>
+  `;
+}
+
+function reservedDetailListMarkup() {
+  if (!selectedRsvpProfile()) {
+    return reservedDayGroups().map(reservedDayMarkup).join("");
+  }
+
+  const buckets = reservedProfileBuckets();
+  return [
+    reservedProfileBucketMarkup("Going", buckets.going, "This profile is not going on any reserved slots yet"),
+    reservedProfileBucketMarkup("Not RSVPed", buckets.notRsvped, "This profile is going on every reserved slot")
+  ].join("");
+}
+
 function reservedDayMarkup(group) {
   const date = parseDate(group.date);
   const holidayNames = holidaysForWindow(date, 1);
@@ -1374,8 +1433,9 @@ function reservedSlotDetailMarkup(date, item) {
   const remaining = remainingCapacityForSlot(item);
   const hasCapacity = remaining === null || remaining > 0;
   const hasSelectedProfile = Boolean(selectedRsvpProfile());
-  const buttonLabel = !hasSelectedProfile ? "Select profile" : isOpen && hasCapacity ? "RSVP" : "Full";
-  const buttonDisabled = !hasSelectedProfile || !isOpen || !hasCapacity || !firebaseSlotState.configured;
+  const selectedProfileAlreadyGoing = selectedProfileIsGoing(item);
+  const buttonLabel = !hasSelectedProfile ? "Select profile" : selectedProfileAlreadyGoing ? "Going" : isOpen && hasCapacity ? "RSVP" : "Full";
+  const buttonDisabled = !hasSelectedProfile || selectedProfileAlreadyGoing || !isOpen || !hasCapacity || !firebaseSlotState.configured;
 
   return `
     <div class="reserved-slot-row" role="row">
@@ -1404,11 +1464,11 @@ function rsvpSummaryChips(item) {
     return summaries
       .map((summary) => {
         const guestOfLabel = guestOfDisplayLabel(summary.guestOf);
+        const canRemove = selectedProfileOwnsSummary(summary);
         return `
           <span class="rsvp-chip">
             <span>${escapeHtml(summary.name)} <small>${escapeHtml(guestOfLabel)}</small></span>
-            <button type="button" data-rsvp-edit="${escapeHtml(summary.id)}" data-rsvp-date="${escapeHtml(item.date)}" data-rsvp-slot="${escapeHtml(item.slotId)}">Edit</button>
-            <button type="button" data-rsvp-remove="${escapeHtml(summary.id)}" data-rsvp-date="${escapeHtml(item.date)}" data-rsvp-slot="${escapeHtml(item.slotId)}" aria-label="Remove ${escapeHtml(summary.name)}">Remove</button>
+            ${canRemove ? `<button type="button" data-rsvp-remove="${escapeHtml(summary.id)}" data-rsvp-date="${escapeHtml(item.date)}" data-rsvp-slot="${escapeHtml(item.slotId)}" aria-label="Remove ${escapeHtml(summary.name)}">Remove</button>` : ""}
           </span>
         `;
       })
@@ -1447,6 +1507,29 @@ function profileById(profileId) {
 
 function selectedRsvpProfile() {
   return profileById(rsvpState.selectedProfileId);
+}
+
+function selectedProfileOwnsSummary(summary) {
+  const profile = selectedRsvpProfile();
+  if (!profile || !summary) return false;
+
+  const seededCrewId = seededCrewIdFromRsvpId(summary.id);
+  if (seededCrewId) {
+    return profile.sourceId === seededCrewId || profile.id === crewProfileId(seededCrewId);
+  }
+
+  return profile.name === summary.name && profile.guestOf === summary.guestOf;
+}
+
+function selectedProfileIsGoing(reservation) {
+  return summariesForSlot(reservation).some(selectedProfileOwnsSummary);
+}
+
+function seededCrewIdFromRsvpId(rsvpId) {
+  const value = String(rsvpId || "");
+  if (!value.startsWith(seededCrewRsvpIdPrefix)) return "";
+  const match = value.match(/^crew_going_(.+)_\d{4}-\d{2}-\d{2}_[a-z-]+$/);
+  return match ? match[1] : "";
 }
 
 function profileFormValues(form) {
@@ -1520,45 +1603,6 @@ function ensureRsvpDialog() {
   `);
 }
 
-function ensureRsvpManageDialog() {
-  if (document.querySelector("#rsvpManageDialog")) return;
-  document.body.insertAdjacentHTML("beforeend", `
-    <div class="rsvp-dialog" id="rsvpManageDialog" hidden>
-      <div class="rsvp-dialog__panel" role="dialog" aria-modal="true" aria-labelledby="rsvpManageTitle">
-        <div class="rsvp-dialog__head">
-          <div>
-            <p class="eyebrow">RSVP</p>
-            <h2 id="rsvpManageTitle">Edit name</h2>
-            <span id="rsvpManageSlot"></span>
-          </div>
-          <button class="ghost-button rsvp-dialog__close" type="button" data-rsvp-manage-close aria-label="Close RSVP editor">Close</button>
-        </div>
-        <form class="rsvp-form" id="rsvpManageForm" novalidate>
-          <input type="hidden" name="summaryId">
-          <input type="hidden" name="date">
-          <input type="hidden" name="slotId">
-          <div class="field-row">
-            <label for="rsvpManageName">Name</label>
-            <input id="rsvpManageName" name="name" type="text" autocomplete="name" required maxlength="100">
-          </div>
-          <div class="field-row">
-            <label for="rsvpManageGuestOf">Guest of</label>
-            <select id="rsvpManageGuestOf" name="guestOf" required></select>
-          </div>
-          <p class="rsvp-form__message" id="rsvpManageMessage" aria-live="polite"></p>
-          <div class="rsvp-form__actions rsvp-form__actions--split">
-            <button class="danger-button" type="button" id="rsvpManageRemove">Remove</button>
-            <span>
-              <button class="ghost-button" type="button" data-rsvp-manage-close>Cancel</button>
-              <button type="submit">Save</button>
-            </span>
-          </div>
-        </form>
-      </div>
-    </div>
-  `);
-}
-
 function openRsvpDialog(date, slotId) {
   ensureRsvpDialog();
   const reservation = boatReservations.find((item) => item.date === date && item.slotId === slotId);
@@ -1595,50 +1639,6 @@ function closeRsvpDialog() {
 
 function summaryForReservation(reservation, summaryId) {
   return summariesForSlot(reservation).find((summary) => summary.id === summaryId) || null;
-}
-
-function openRsvpManageDialog(date, slotId, summaryId) {
-  ensureRsvpManageDialog();
-  const reservation = boatReservations.find((item) => item.date === date && item.slotId === slotId);
-  if (!reservation) return;
-  const summary = summaryForReservation(reservation, summaryId);
-  if (!summary) return;
-
-  const slot = slots.find((candidate) => candidate.id === slotId);
-  const dialog = document.querySelector("#rsvpManageDialog");
-  const form = document.querySelector("#rsvpManageForm");
-  const slotLabel = document.querySelector("#rsvpManageSlot");
-  const message = document.querySelector("#rsvpManageMessage");
-  form.reset();
-  form.elements.summaryId.value = summaryId;
-  form.elements.date.value = date;
-  form.elements.slotId.value = slotId;
-  form.elements.name.value = summary.name;
-  form.elements.guestOf.innerHTML = crewOptionsMarkup(summary.guestOf || "");
-  form.querySelector("[type='submit']").disabled = false;
-  document.querySelector("#rsvpManageRemove").disabled = false;
-  slotLabel.textContent = `${fullDateWithYear.format(parseDate(date))} - ${slot ? `${slot.name} - ${slot.timeLabel}` : slotId}`;
-  message.textContent = "";
-  dialog.hidden = false;
-  form.elements.name.focus();
-}
-
-function closeRsvpManageDialog() {
-  const dialog = document.querySelector("#rsvpManageDialog");
-  if (dialog) dialog.hidden = true;
-}
-
-function updateLocalSummary(reservation, summaryId, values) {
-  const slotId = rsvpSlotId(reservation);
-  const summaries = rsvpState.summariesBySlotId.get(slotId) || [];
-  rsvpState.summariesBySlotId.set(slotId, summaries.map((summary) => {
-    if (summary.id !== summaryId) return summary;
-    return {
-      ...summary,
-      name: values.name,
-      guestOf: values.guestOf
-    };
-  }));
 }
 
 function renderProfileSection() {
@@ -1778,51 +1778,15 @@ function removeLocalSummary(reservation, summaryId) {
   rsvpState.summariesBySlotId.set(slotId, summaries.filter((summary) => summary.id !== summaryId));
 }
 
-async function submitRsvpManageForm(event) {
-  event.preventDefault();
-  if (rsvpState.submitting) return;
-
-  const form = event.currentTarget;
-  const message = document.querySelector("#rsvpManageMessage");
-  const summaryId = form.elements.summaryId.value;
-  const date = form.elements.date.value;
-  const slotId = form.elements.slotId.value;
-  const reservation = boatReservations.find((item) => item.date === date && item.slotId === slotId);
-  const summary = reservation ? summaryForReservation(reservation, summaryId) : null;
-  if (!reservation || !summary) {
-    message.textContent = "This RSVP is no longer available.";
-    return;
-  }
-
-  const values = {
-    name: form.elements.name.value.trim(),
-    guestOf: form.elements.guestOf.value
-  };
-  if (!values.name || !values.guestOf) {
-    message.textContent = "Add a name and guest of.";
-    return;
-  }
-
-  rsvpState.submitting = true;
-  message.textContent = "Saving changes...";
-  try {
-    const api = await import("./firebase-client.js");
-    await api.updatePublicRsvp(summaryId, values);
-    updateLocalSummary(reservation, summaryId, values);
-    renderReservedOnlyPage();
-    closeRsvpManageDialog();
-  } catch (error) {
-    message.textContent = error && error.message ? error.message : "Unable to save changes.";
-  } finally {
-    rsvpState.submitting = false;
-  }
-}
-
 async function removeRsvpSummary(date, slotId, summaryId) {
   if (rsvpState.submitting) return;
   const reservation = boatReservations.find((item) => item.date === date && item.slotId === slotId);
   const summary = reservation ? summaryForReservation(reservation, summaryId) : null;
   if (!reservation || !summary) return;
+  if (!selectedProfileOwnsSummary(summary)) {
+    window.alert(`Select ${summary.name}'s profile before removing them from Going.`);
+    return;
+  }
   if (!window.confirm(`Remove ${summary.name} from this RSVP?`)) return;
 
   rsvpState.submitting = true;
@@ -1831,14 +1795,8 @@ async function removeRsvpSummary(date, slotId, summaryId) {
     await api.deletePublicRsvp(summaryId);
     removeLocalSummary(reservation, summaryId);
     renderReservedOnlyPage();
-    closeRsvpManageDialog();
   } catch (error) {
-    const message = document.querySelector("#rsvpManageMessage");
-    if (message) {
-      message.textContent = error && error.message ? error.message : "Unable to remove RSVP.";
-    } else {
-      window.alert("Unable to remove RSVP.");
-    }
+    window.alert(error && error.message ? error.message : "Unable to remove RSVP.");
   } finally {
     rsvpState.submitting = false;
   }
@@ -1957,7 +1915,7 @@ function renderReservedOnlyPage() {
 
   renderReservedOnlyDateDetail();
   els.reservedOnlyCalendar.innerHTML = months.map((month) => reservedOnlyMonthMarkup(month, start, end)).join("");
-  els.reservedOnlyList.innerHTML = reservedDayGroups().map(reservedDayMarkup).join("");
+  els.reservedOnlyList.innerHTML = reservedDetailListMarkup();
 }
 
 function reservedOnlyMonthMarkup(month, start, end) {
@@ -2642,7 +2600,6 @@ async function boot() {
     renderReservedOnlyPage();
     renderProfileSection();
     ensureRsvpDialog();
-    ensureRsvpManageDialog();
     els.reservedOnlyCalendar.addEventListener("click", (event) => {
       const day = event.target.closest(".day[data-date]");
       if (!day) return;
@@ -2656,20 +2613,10 @@ async function boot() {
         closeRsvpDialog();
         return;
       }
-      const manageCloseButton = event.target.closest("[data-rsvp-manage-close]");
-      if (manageCloseButton) {
-        closeRsvpManageDialog();
-        return;
-      }
       const profileClearButton = event.target.closest("#rsvpProfileClear");
       if (profileClearButton) {
         resetProfileForm();
         renderReservedOnlyPage();
-        return;
-      }
-      const editButton = event.target.closest("[data-rsvp-edit]");
-      if (editButton) {
-        openRsvpManageDialog(editButton.dataset.rsvpDate, editButton.dataset.rsvpSlot, editButton.dataset.rsvpEdit);
         return;
       }
       const removeButton = event.target.closest("[data-rsvp-remove]");
@@ -2693,15 +2640,10 @@ async function boot() {
       }
       renderReservedOnlyPage();
     });
-    document.querySelector("#rsvpManageForm")?.addEventListener("submit", submitRsvpManageForm);
     document.addEventListener("submit", (event) => {
       if (event.target.matches("#rsvpProfileForm")) {
         submitProfileForm(event);
       }
-    });
-    document.querySelector("#rsvpManageRemove")?.addEventListener("click", () => {
-      const form = document.querySelector("#rsvpManageForm");
-      removeRsvpSummary(form.elements.date.value, form.elements.slotId.value, form.elements.summaryId.value);
     });
     return;
   }

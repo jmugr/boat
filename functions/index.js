@@ -112,6 +112,33 @@ function guestName(rsvp) {
   return rsvp.name || "Guest";
 }
 
+function isSeededCrewRsvpId(rsvpId) {
+  return String(rsvpId || "").startsWith("crew_going_");
+}
+
+async function syncPrivateRsvpFromSummary(rsvpId, summary) {
+  const privateRef = admin.firestore().collection("rsvps").doc(rsvpId);
+  const privateSnapshot = await privateRef.get();
+  if (!privateSnapshot.exists) return;
+
+  await privateRef.set(
+    {
+      name: summary.name,
+      guestOf: summary.guestOf,
+      alertEmailError: admin.firestore.FieldValue.delete()
+    },
+    { merge: true }
+  );
+}
+
+async function deletePrivateRsvp(rsvpId) {
+  const privateRef = admin.firestore().collection("rsvps").doc(rsvpId);
+  const privateSnapshot = await privateRef.get();
+  if (privateSnapshot.exists) {
+    await privateRef.delete();
+  }
+}
+
 exports.sendOwnerRsvpEmail = onDocumentCreated(
   {
     document: "rsvps/{rsvpId}",
@@ -120,6 +147,7 @@ exports.sendOwnerRsvpEmail = onDocumentCreated(
   async (event) => {
     const snapshot = event.data;
     if (!snapshot) return;
+    if (isSeededCrewRsvpId(event.params.rsvpId)) return;
 
     const rsvp = snapshot.data();
     try {
@@ -160,6 +188,10 @@ exports.sendOwnerRsvpEditEmail = onDocumentUpdated(
     const before = beforeSnapshot.data();
     const after = afterSnapshot.data();
     if (!publicRsvpFieldsChanged(before, after)) return;
+    if (isSeededCrewRsvpId(event.params.rsvpId)) {
+      await syncPrivateRsvpFromSummary(event.params.rsvpId, after);
+      return;
+    }
 
     const privateRef = admin.firestore().collection("rsvps").doc(event.params.rsvpId);
     const privateSnapshot = await privateRef.get();
@@ -199,6 +231,11 @@ exports.sendOwnerRsvpRemovalEmail = onDocumentDeleted(
     if (!summarySnapshot) return;
 
     const summary = summarySnapshot.data();
+    if (isSeededCrewRsvpId(event.params.rsvpId)) {
+      await deletePrivateRsvp(event.params.rsvpId);
+      return;
+    }
+
     const privateRef = admin.firestore().collection("rsvps").doc(event.params.rsvpId);
     const privateSnapshot = await privateRef.get();
     const rsvp = privateSnapshot.exists ? privateSnapshot.data() : summary;
