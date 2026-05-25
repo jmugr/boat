@@ -2546,6 +2546,7 @@ function escapeHtml(value) {
 }
 
 async function boot() {
+  renderTrackingStatus();
   loadPlanner();
   await loadFirebaseRsvpData();
 
@@ -2623,6 +2624,23 @@ async function boot() {
     el.addEventListener("input", renderPlanner);
   });
   renderPlanner();
+}
+
+function renderTrackingStatus() {
+  let isHiddenDevice = false;
+  try {
+    isHiddenDevice = localStorage.getItem("is_my_device") === "true";
+  } catch (_) {
+    return;
+  }
+
+  if (!isHiddenDevice) return;
+
+  const status = document.createElement("div");
+  status.className = "tracking-status";
+  status.setAttribute("role", "status");
+  status.textContent = "This device is hidden from Umami tracking";
+  document.body.prepend(status);
 }
 
 boot();
