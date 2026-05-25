@@ -1478,15 +1478,21 @@ function rsvpSummaryChips(item) {
   return `<span class="chip chip--clear">No RSVPs yet</span>`;
 }
 
-function crewOptionsMarkup(selectedName = "") {
-  const options = [
-    { value: crewGuestOfNone, label: "Boat crew" },
-    ...crewGuestOfOptions()
-  ];
+function crewOptionsMarkup(selectedName = "", options = {}) {
+  const choices = options.includeBoatCrew === false
+    ? crewGuestOfOptions()
+    : [
+        { value: crewGuestOfNone, label: "Boat crew" },
+        ...crewGuestOfOptions()
+      ];
   return `
     <option value="">Select crew member</option>
-    ${options.map((option) => `<option value="${escapeHtml(option.value)}"${option.value === selectedName ? " selected" : ""}>${escapeHtml(option.label)}</option>`).join("")}
+    ${choices.map((option) => `<option value="${escapeHtml(option.value)}"${option.value === selectedName ? " selected" : ""}>${escapeHtml(option.label)}</option>`).join("")}
   `;
+}
+
+function editableProfileGuestOfOptionsMarkup(selectedName = "") {
+  return crewOptionsMarkup(selectedName, { includeBoatCrew: selectedName === crewGuestOfNone });
 }
 
 function profileOptionsMarkup(selectedProfileId = "") {
@@ -1669,7 +1675,7 @@ function renderProfileSection() {
       </div>
       <div class="field-row">
         <label for="profileGuestOf">Guest of</label>
-        <select id="profileGuestOf" name="guestOf" required>${crewOptionsMarkup()}</select>
+        <select id="profileGuestOf" name="guestOf" required>${editableProfileGuestOfOptionsMarkup()}</select>
       </div>
       <div class="field-row">
         <label for="profileContact">Phone number</label>
@@ -1695,7 +1701,7 @@ function resetProfileForm() {
   form.elements.profileId.value = "";
   rsvpState.selectedProfileId = "";
   formControl(form, "selectedProfile").innerHTML = profileOptionsMarkup();
-  form.elements.guestOf.innerHTML = crewOptionsMarkup();
+  form.elements.guestOf.innerHTML = editableProfileGuestOfOptionsMarkup();
   setProfileFormReadOnly(form, false);
   document.querySelector("#rsvpProfileMessage").textContent = "";
 }
@@ -1715,7 +1721,7 @@ function fillProfileForm(profile) {
   }
   form.elements.profileId.value = profile.id;
   form.elements.name.value = profile.name;
-  form.elements.guestOf.innerHTML = crewOptionsMarkup(profile.guestOf);
+  form.elements.guestOf.innerHTML = editableProfileGuestOfOptionsMarkup(profile.guestOf);
   form.elements.contact.value = profile.contact;
   setProfileFormReadOnly(form, false);
   document.querySelector("#rsvpProfileMessage").textContent = "";
