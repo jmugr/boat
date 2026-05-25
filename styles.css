@@ -603,6 +603,11 @@ select {
   background: #dceee0;
 }
 
+.chip--capacity {
+  color: #174c5a;
+  background: #dff0f4;
+}
+
 .calendar {
   display: grid;
   gap: 18px;
@@ -1297,7 +1302,7 @@ select {
 
 .reserved-slot-row {
   display: grid;
-  grid-template-columns: minmax(78px, .7fr) minmax(90px, .8fr) minmax(135px, 1.1fr) minmax(190px, 1.7fr) minmax(150px, 1.2fr);
+  grid-template-columns: minmax(78px, .75fr) minmax(90px, .8fr) minmax(130px, 1.1fr) minmax(140px, 1fr) minmax(140px, 1.1fr) minmax(150px, 1.2fr);
   align-items: start;
   gap: 12px;
   padding: 10px 16px;
@@ -1334,14 +1339,179 @@ select {
   gap: 5px;
 }
 
-.reserved-slot-row__count {
-  padding: 3px 7px;
+.rsvp-button {
+  min-height: 28px;
+  padding: 0 10px;
+  font-size: .76rem;
+}
+
+.rsvp-button:disabled {
+  color: #5d686f;
+  border-color: #d4dde1;
+  background: #eef2f4;
+  cursor: not-allowed;
+}
+
+.rsvp-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  min-height: 26px;
+  padding: 3px 4px 3px 8px;
+  border: 1px solid #cbdde2;
   border-radius: 999px;
-  color: #174c5a;
+  color: #314047;
+  background: #fff;
+  font-size: .78rem;
+  font-weight: 800;
+}
+
+.rsvp-chip button {
+  min-height: 20px;
+  padding: 0 6px;
+  border-color: #d4dde1;
+  color: var(--blue);
+  background: #eef8fa;
+  font-size: .68rem;
+}
+
+.rsvp-chip small {
+  margin-left: 4px;
+  color: var(--muted);
+  font-size: .68rem;
+  font-weight: 750;
+}
+
+.rsvp-chip button:hover {
   background: #dff0f4;
-  font-size: .72rem;
-  font-weight: 850;
-  white-space: nowrap;
+}
+
+.rsvp-dialog {
+  position: fixed;
+  inset: 0;
+  z-index: 20;
+  display: grid;
+  place-items: center;
+  padding: 18px;
+  background: rgba(12, 29, 33, .42);
+}
+
+.rsvp-dialog[hidden] {
+  display: none;
+}
+
+.rsvp-dialog__panel {
+  width: min(560px, 100%);
+  max-height: calc(100vh - 36px);
+  overflow: auto;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fff;
+  box-shadow: var(--shadow);
+}
+
+.rsvp-dialog__head {
+  display: flex;
+  align-items: start;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 18px;
+  border-bottom: 1px solid var(--line);
+}
+
+.rsvp-dialog__head h2 {
+  margin: 0 0 4px;
+}
+
+.rsvp-dialog__head span {
+  color: var(--muted);
+  font-size: .9rem;
+}
+
+.rsvp-dialog__close {
+  flex: 0 0 auto;
+}
+
+.rsvp-form {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+  padding: 18px;
+}
+
+.rsvp-form textarea {
+  width: 100%;
+  resize: vertical;
+}
+
+.field-row--wide,
+.rsvp-form__message,
+.rsvp-form__actions {
+  grid-column: 1 / -1;
+}
+
+.rsvp-form__message {
+  min-height: 22px;
+  margin: 0;
+  color: var(--blue);
+  font-weight: 800;
+}
+
+.rsvp-form__actions {
+  display: flex;
+  justify-content: end;
+  gap: 10px;
+}
+
+.rsvp-form__actions--split {
+  justify-content: space-between;
+}
+
+.rsvp-form__actions--split span {
+  display: flex;
+  gap: 10px;
+}
+
+.profile-section {
+  display: grid;
+  gap: 14px;
+  margin-bottom: 18px;
+}
+
+.profile-form {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+  padding: 16px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fff;
+}
+
+.profile-list {
+  display: grid;
+  gap: 10px;
+}
+
+.profile-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 14px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fff;
+}
+
+.profile-card div {
+  display: grid;
+  gap: 3px;
+}
+
+.profile-card span {
+  color: var(--muted);
+  font-size: .82rem;
 }
 
 button {
@@ -1357,6 +1527,14 @@ button {
 
 button:not(.day):hover {
   background: #10566d;
+}
+
+button:disabled,
+button:disabled:hover {
+  color: #5d686f;
+  border-color: #d4dde1;
+  background: #eef2f4;
+  cursor: not-allowed;
 }
 
 .ghost-button {
@@ -1441,6 +1619,7 @@ button:not(.day):hover {
   .date-results,
   .date-detail__slots,
   .boat-reserved__grid,
+  .profile-form,
   .source-grid {
     grid-template-columns: 1fr;
   }
@@ -1486,6 +1665,16 @@ button:not(.day):hover {
     grid-template-columns: 1fr;
     gap: 7px;
     padding: 12px 14px;
+  }
+
+  .rsvp-form {
+    grid-template-columns: 1fr;
+  }
+
+  .rsvp-dialog__head,
+  .rsvp-form__actions,
+  .profile-card {
+    display: grid;
   }
 
   .reserved-slot-row--head {

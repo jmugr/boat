@@ -1,0 +1,19 @@
+{
+  "name": "my-way-boat",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Static My Way boat planner and RSVP calendar.",
+  "scripts": {
+    "dev": "node local-server.js",
+    "check": "node --check app.js && node --check firebase-client.js && node --check firebase-config.js && node --check scripts/seed-firebase.js",
+    "seed:firebase": "node scripts/seed-firebase.js",
+    "deploy:firestore": "firebase deploy --only firestore:rules,firestore:indexes",
+    "deploy:functions": "firebase deploy --only functions"
+  },
+  "dependencies": {
+    "firebase": "^10.14.1"
+  },
+  "devDependencies": {
+    "firebase-admin": "^12.7.0"
+  }
+}

@@ -25,10 +25,41 @@ Open `index.html` directly in a browser for the reserved calendar homepage. The 
 - `docs/site-guide.md`: current behavior and implementation guide.
 - `docs/session-build-notes.md`: build history and session notes.
 
+## Firebase RSVP MVP
+
+The Firebase MVP scaffold keeps GitHub Pages as the static host and uses Firestore for public slot data plus RSVP writes.
+
+- `firebase-config.js`: browser Firebase config placeholder. Replace the `replace-with-*` values before using Firebase in production.
+- `firebase-client.js`: browser Firestore helpers for `slots`, `rsvps`, and `rsvpSummaries`.
+- `firestore.rules`: public slot reads, public RSVP creates, write-only private RSVP docs, and public first-name-only summaries.
+- `scripts/seed-firebase.js`: idempotent slot seeding from the current hard-coded reservation data.
+- `functions/index.js`: Firestore `rsvps/{rsvpId}` trigger that sends an owner email through Gmail/Nodemailer and records send status.
+
+Seed slots after Firebase credentials and project access are configured:
+
+```powershell
+$env:FIREBASE_PROJECT_ID="your-project-id"
+node scripts/seed-firebase.js
+```
+
+Deploy rules and functions with the Firebase CLI once it is installed and authenticated:
+
+```powershell
+firebase deploy --only firestore:rules,firestore:indexes
+firebase functions:secrets:set GMAIL_USER
+firebase functions:secrets:set GMAIL_PASSWORD
+firebase functions:secrets:set EMAIL_TO
+firebase deploy --only functions
+```
+
 ## Verification
 
 For JavaScript syntax checks:
 
 ```powershell
 node --check app.js
+node --check firebase-client.js
+node --check firebase-config.js
+node --check scripts/seed-firebase.js
+node --check functions/index.js
 ```

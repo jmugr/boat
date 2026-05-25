@@ -1,0 +1,14 @@
+node_modules/
+functions/node_modules/
+dist/
+build/
+.firebase/
+firebase-debug.log
+firestore-debug.log
+ui-debug.log
+*.log
+.env
+.env.*
+!.env.example
+seed-output/
+tmp/

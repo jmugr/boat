@@ -1,0 +1,146 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function hasOnly(data, fields) {
+      return data.keys().hasOnly(fields);
+    }
+
+    function hasAll(data, fields) {
+      return data.keys().hasAll(fields);
+    }
+
+    function isValidSlotStatus(status) {
+      return status in ['open', 'closed', 'reserved', 'other-reserved'];
+    }
+
+    function isValidRsvpStatus(status) {
+      return status == 'confirmed';
+    }
+
+    function isValidCrewName(name) {
+      return name in ['Aaron', 'Sean', 'Jerry', 'Johnny', 'Brad', 'Joe'];
+    }
+
+    function isValidRsvpData(data) {
+      return
+        hasOnly(data, [
+          'slotId',
+          'name',
+          'guestOf',
+          'contact',
+          'status',
+          'createdAt',
+          'alertEmailSentAt',
+          'alertEmailError'
+        ]) &&
+        hasAll(data, [
+          'slotId',
+          'name',
+          'guestOf',
+          'contact',
+          'status',
+          'createdAt'
+        ]) &&
+        data.slotId is string &&
+        data.name is string &&
+        isValidCrewName(data.guestOf) &&
+        data.contact is string &&
+        (!('alertEmailSentAt' in data) || data.alertEmailSentAt is timestamp) &&
+        (!('alertEmailError' in data) || data.alertEmailError is string) &&
+        isValidRsvpStatus(data.status);
+    }
+
+    function isValidSummaryData(data) {
+      return
+        hasOnly(data, [
+          'slotId',
+          'name',
+          'guestOf',
+          'status',
+          'createdAt'
+        ]) &&
+        hasAll(data, [
+          'slotId',
+          'name',
+          'guestOf',
+          'status',
+          'createdAt'
+        ]) &&
+        data.slotId is string &&
+        data.name is string &&
+        isValidCrewName(data.guestOf) &&
+        isValidRsvpStatus(data.status);
+    }
+
+    function isValidProfileData(data) {
+      return
+        hasOnly(data, [
+          'name',
+          'guestOf',
+          'contact',
+          'createdAt',
+          'updatedAt'
+        ]) &&
+        hasAll(data, [
+          'name',
+          'guestOf',
+          'contact',
+          'createdAt',
+          'updatedAt'
+        ]) &&
+        data.name is string &&
+        isValidCrewName(data.guestOf) &&
+        data.contact is string &&
+        data.createdAt is timestamp &&
+        data.updatedAt is timestamp;
+    }
+
+    match /slots/{slotId} {
+      allow read: if true;
+      allow write: if false;
+    }
+
+    match /rsvps/{rsvpId} {
+      allow create: if
+        isValidRsvpData(request.resource.data) &&
+        request.resource.data.createdAt == request.time;
+
+      allow read, update, delete: if false;
+    }
+
+    match /rsvpSummaries/{summaryId} {
+      allow read: if true;
+      allow create: if
+        isValidSummaryData(request.resource.data) &&
+        request.resource.data.createdAt == request.time;
+
+      allow update: if
+        isValidSummaryData(request.resource.data) &&
+        request.resource.data.diff(resource.data).changedKeys().hasOnly([
+          'name',
+          'guestOf'
+        ]) &&
+        request.resource.data.slotId == resource.data.slotId &&
+        request.resource.data.status == resource.data.status &&
+        request.resource.data.createdAt == resource.data.createdAt;
+
+      allow delete: if true;
+    }
+
+    match /rsvpProfiles/{profileId} {
+      allow read: if true;
+      allow create: if
+        isValidProfileData(request.resource.data) &&
+        request.resource.data.createdAt == request.time &&
+        request.resource.data.updatedAt == request.time;
+
+      allow update: if
+        isValidProfileData(request.resource.data) &&
+        request.resource.data.createdAt == resource.data.createdAt &&
+        request.resource.data.updatedAt == request.time;
+
+      allow delete: if false;
+    }
+  }
+}
