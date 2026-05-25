@@ -15,7 +15,6 @@ import {
 import { firebaseConfig, hasFirebaseConfig } from "./firebase-config.js";
 
 export const FIRESTORE_COLLECTIONS = {
-  slots: "slots",
   rsvps: "rsvps",
   rsvpSummaries: "rsvpSummaries",
   rsvpProfiles: "rsvpProfiles"
@@ -37,20 +36,6 @@ export function initFirebase() {
   const app = initializeApp(firebaseConfig);
   db = getFirestore(app);
   return db;
-}
-
-export async function loadPublicSlots() {
-  const database = initFirebase();
-  if (!database) return { configured: false, slots: [] };
-
-  const snapshot = await getDocs(
-    query(collection(database, FIRESTORE_COLLECTIONS.slots), orderBy("date"), orderBy("slotId"))
-  );
-
-  return {
-    configured: true,
-    slots: snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }))
-  };
 }
 
 export async function loadPublicSummaries(slotId) {

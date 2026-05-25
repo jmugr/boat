@@ -150,12 +150,12 @@ const slots = [
     endOffsetDays: 1
   }
 ];
-const firebaseSlotState = {
+const firebaseState = {
   configured: false,
   loaded: false,
-  error: "",
-  byKey: new Map()
+  error: ""
 };
+const defaultSlotCapacity = 12;
 const rsvpState = {
   summariesLoaded: false,
   summariesError: "",
@@ -237,165 +237,100 @@ let boatReservations = [
   boatReservation("2026-09-12", "morning"),
   boatReservation("2026-09-20", "morning")
 ];
-let otherReservations = [
-  otherReservation("2026-05-24", "morning"),
-  otherReservation("2026-05-25", "morning"),
-  otherReservation("2026-05-29", "evening"),
-  otherReservation("2026-05-30", "morning"),
-  otherReservation("2026-05-31", "morning"),
-  otherReservation("2026-06-02", "morning"),
-  otherReservation("2026-06-02", "evening"),
-  otherReservation("2026-06-03", "evening"),
-  otherReservation("2026-06-04", "morning", "Maintenance"),
-  otherReservation("2026-06-04", "evening"),
-  otherReservation("2026-06-06", "morning"),
-  otherReservation("2026-06-08", "evening"),
-  otherReservation("2026-06-09", "morning"),
-  otherReservation("2026-06-10", "morning"),
-  otherReservation("2026-06-10", "evening"),
-  otherReservation("2026-06-11", "evening"),
-  otherReservation("2026-06-12", "morning", "Maintenance"),
-  otherReservation("2026-06-12", "evening"),
-  otherReservation("2026-06-13", "morning"),
-  otherReservation("2026-06-13", "evening"),
-  otherReservation("2026-06-14", "morning"),
-  otherReservation("2026-06-15", "morning", "Maintenance"),
-  otherReservation("2026-06-15", "evening"),
-  otherReservation("2026-06-17", "morning"),
-  otherReservation("2026-06-18", "evening"),
-  otherReservation("2026-06-20", "morning"),
-  otherReservation("2026-06-20", "evening"),
-  otherReservation("2026-06-21", "morning"),
-  otherReservation("2026-06-21", "evening"),
-  otherReservation("2026-06-22", "evening"),
-  otherReservation("2026-06-23", "morning", "Maintenance"),
-  otherReservation("2026-06-24", "evening"),
-  otherReservation("2026-06-25", "evening"),
-  otherReservation("2026-06-26", "evening"),
-  otherReservation("2026-06-28", "morning"),
-  otherReservation("2026-07-01", "morning", "Maintenance"),
-  otherReservation("2026-07-02", "evening"),
-  otherReservation("2026-07-03", "morning"),
-  otherReservation("2026-07-05", "morning"),
-  otherReservation("2026-07-05", "evening"),
-  otherReservation("2026-07-06", "evening"),
-  otherReservation("2026-07-07", "morning"),
-  otherReservation("2026-07-07", "evening"),
-  otherReservation("2026-07-08", "evening"),
-  otherReservation("2026-07-09", "morning", "Maintenance"),
-  otherReservation("2026-07-09", "evening"),
-  otherReservation("2026-07-10", "morning"),
-  otherReservation("2026-07-11", "morning"),
-  otherReservation("2026-07-11", "evening"),
-  otherReservation("2026-07-12", "morning"),
-  otherReservation("2026-07-12", "evening"),
-  otherReservation("2026-07-13", "morning"),
-  otherReservation("2026-07-13", "evening"),
-  otherReservation("2026-07-14", "morning"),
-  otherReservation("2026-07-14", "evening"),
-  otherReservation("2026-07-15", "morning"),
-  otherReservation("2026-07-15", "evening"),
-  otherReservation("2026-07-16", "morning"),
-  otherReservation("2026-07-16", "evening"),
-  otherReservation("2026-07-17", "morning"),
-  otherReservation("2026-07-17", "evening"),
-  otherReservation("2026-07-18", "morning"),
-  otherReservation("2026-07-18", "evening"),
-  otherReservation("2026-07-19", "morning"),
-  otherReservation("2026-07-20", "morning", "Maintenance"),
-  otherReservation("2026-07-21", "morning"),
-  otherReservation("2026-07-21", "evening"),
-  otherReservation("2026-07-22", "evening"),
-  otherReservation("2026-07-23", "morning"),
-  otherReservation("2026-07-23", "evening"),
-  otherReservation("2026-07-24", "morning"),
-  otherReservation("2026-07-24", "evening"),
-  otherReservation("2026-07-25", "evening"),
-  otherReservation("2026-07-26", "morning"),
-  otherReservation("2026-07-26", "evening"),
-  otherReservation("2026-07-28", "morning", "Maintenance"),
-  otherReservation("2026-07-28", "evening"),
-  otherReservation("2026-07-29", "evening"),
-  otherReservation("2026-07-30", "evening"),
-  otherReservation("2026-07-31", "evening"),
-  otherReservation("2026-08-01", "morning"),
-  otherReservation("2026-08-02", "morning"),
-  otherReservation("2026-08-04", "evening"),
-  otherReservation("2026-08-05", "morning", "Maintenance"),
-  otherReservation("2026-08-05", "evening"),
-  otherReservation("2026-08-06", "morning"),
-  otherReservation("2026-08-06", "evening"),
-  otherReservation("2026-08-07", "morning"),
-  otherReservation("2026-08-07", "evening"),
-  otherReservation("2026-08-08", "morning"),
-  otherReservation("2026-08-08", "evening"),
-  otherReservation("2026-08-09", "morning"),
-  otherReservation("2026-08-10", "evening"),
-  otherReservation("2026-08-11", "evening"),
-  otherReservation("2026-08-12", "evening"),
-  otherReservation("2026-08-13", "morning", "Maintenance"),
-  otherReservation("2026-08-14", "morning"),
-  otherReservation("2026-08-15", "morning"),
-  otherReservation("2026-08-16", "morning"),
-  otherReservation("2026-08-16", "evening"),
-  otherReservation("2026-08-17", "morning"),
-  otherReservation("2026-08-17", "evening"),
-  otherReservation("2026-08-19", "evening"),
-  otherReservation("2026-08-20", "evening"),
-  otherReservation("2026-08-21", "morning", "Maintenance"),
-  otherReservation("2026-08-21", "evening"),
-  otherReservation("2026-08-22", "morning"),
-  otherReservation("2026-08-22", "evening"),
-  otherReservation("2026-08-24", "morning", "Maintenance"),
-  otherReservation("2026-08-25", "morning"),
-  otherReservation("2026-08-25", "evening"),
-  otherReservation("2026-08-26", "evening"),
-  otherReservation("2026-08-27", "morning"),
-  otherReservation("2026-08-27", "evening"),
-  otherReservation("2026-08-28", "morning"),
-  otherReservation("2026-08-29", "morning"),
-  otherReservation("2026-08-30", "morning"),
-  otherReservation("2026-09-01", "morning", "Maintenance"),
-  otherReservation("2026-09-02", "morning"),
-  otherReservation("2026-09-02", "evening"),
-  otherReservation("2026-09-05", "evening"),
-  otherReservation("2026-09-06", "evening"),
-  otherReservation("2026-09-08", "evening"),
-  otherReservation("2026-09-09", "morning", "Maintenance"),
-  otherReservation("2026-09-09", "evening"),
-  otherReservation("2026-09-12", "evening"),
-  otherReservation("2026-09-13", "morning"),
-  otherReservation("2026-09-13", "evening"),
-  otherReservation("2026-09-15", "evening"),
-  otherReservation("2026-09-16", "morning", "Maintenance"),
-  otherReservation("2026-09-16", "evening"),
-  otherReservation("2026-09-17", "morning"),
-  otherReservation("2026-09-17", "evening"),
-  otherReservation("2026-09-18", "morning"),
-  otherReservation("2026-09-18", "evening"),
-  otherReservation("2026-09-19", "morning"),
-  otherReservation("2026-09-19", "evening"),
-  otherReservation("2026-09-22", "morning"),
-  otherReservation("2026-09-22", "evening"),
-  otherReservation("2026-09-23", "evening"),
-  otherReservation("2026-09-24", "evening"),
-  otherReservation("2026-09-25", "morning", "Maintenance"),
-  otherReservation("2026-09-26", "morning"),
-  otherReservation("2026-09-27", "morning"),
-  otherReservation("2026-09-28", "morning", "Maintenance"),
-  otherReservation("2026-09-28", "evening"),
-  otherReservation("2026-09-29", "evening"),
-  otherReservation("2026-09-30", "evening"),
-  otherReservation("2026-10-02", "morning"),
-  otherReservation("2026-10-06", "morning", "Maintenance"),
-  otherReservation("2026-10-07", "evening"),
-  otherReservation("2026-10-08", "evening"),
-  otherReservation("2026-10-10", "morning"),
-  otherReservation("2026-10-12", "morning"),
-  otherReservation("2026-10-14", "morning", "Maintenance"),
-  otherReservation("2026-10-15", "evening"),
-  otherReservation("2026-10-17", "morning")
+const openWeekendSlots = [
+  selectableSlot("2026-05-30", "evening"),
+  selectableSlot("2026-05-31", "evening"),
+  selectableSlot("2026-06-07", "morning"),
+  selectableSlot("2026-06-07", "evening"),
+  selectableSlot("2026-06-14", "evening"),
+  selectableSlot("2026-06-19", "evening"),
+  selectableSlot("2026-06-28", "evening"),
+  selectableSlot("2026-07-03", "evening"),
+  selectableSlot("2026-07-19", "evening"),
+  selectableSlot("2026-08-01", "evening"),
+  selectableSlot("2026-08-02", "evening"),
+  selectableSlot("2026-08-09", "evening"),
+  selectableSlot("2026-08-14", "evening"),
+  selectableSlot("2026-08-23", "evening"),
+  selectableSlot("2026-08-30", "evening"),
+  selectableSlot("2026-09-04", "evening"),
+  selectableSlot("2026-09-06", "morning"),
+  selectableSlot("2026-09-07", "evening"),
+  selectableSlot("2026-09-25", "evening"),
+  selectableSlot("2026-09-27", "evening"),
+  selectableSlot("2026-10-03", "morning"),
+  selectableSlot("2026-10-03", "evening"),
+  selectableSlot("2026-10-04", "morning"),
+  selectableSlot("2026-10-04", "evening"),
+  selectableSlot("2026-10-09", "evening"),
+  selectableSlot("2026-10-10", "evening"),
+  selectableSlot("2026-10-11", "evening"),
+  selectableSlot("2026-10-12", "evening"),
+  selectableSlot("2026-10-16", "evening"),
+  selectableSlot("2026-10-17", "evening"),
+  selectableSlot("2026-10-18", "evening")
 ];
+const openWeekdaySlots = [
+  selectableSlot("2026-05-26", "evening"),
+  selectableSlot("2026-05-27", "morning"),
+  selectableSlot("2026-05-28", "morning"),
+  selectableSlot("2026-05-28", "evening"),
+  selectableSlot("2026-05-29", "morning"),
+  selectableSlot("2026-06-01", "morning"),
+  selectableSlot("2026-06-01", "evening"),
+  selectableSlot("2026-06-03", "morning"),
+  selectableSlot("2026-06-05", "morning"),
+  selectableSlot("2026-06-08", "morning"),
+  selectableSlot("2026-06-11", "morning"),
+  selectableSlot("2026-06-16", "morning"),
+  selectableSlot("2026-06-18", "morning"),
+  selectableSlot("2026-06-22", "morning"),
+  selectableSlot("2026-06-23", "evening"),
+  selectableSlot("2026-06-24", "morning"),
+  selectableSlot("2026-06-29", "morning"),
+  selectableSlot("2026-06-30", "morning"),
+  selectableSlot("2026-07-02", "morning"),
+  selectableSlot("2026-07-06", "morning"),
+  selectableSlot("2026-07-22", "morning"),
+  selectableSlot("2026-07-27", "morning"),
+  selectableSlot("2026-07-29", "morning"),
+  selectableSlot("2026-07-30", "morning"),
+  selectableSlot("2026-07-31", "morning"),
+  selectableSlot("2026-08-03", "morning"),
+  selectableSlot("2026-08-04", "morning"),
+  selectableSlot("2026-08-10", "morning"),
+  selectableSlot("2026-08-11", "morning"),
+  selectableSlot("2026-08-12", "morning"),
+  selectableSlot("2026-08-18", "morning"),
+  selectableSlot("2026-08-19", "morning"),
+  selectableSlot("2026-08-20", "morning"),
+  selectableSlot("2026-08-26", "morning"),
+  selectableSlot("2026-08-31", "evening"),
+  selectableSlot("2026-09-03", "morning"),
+  selectableSlot("2026-09-04", "morning"),
+  selectableSlot("2026-09-08", "morning"),
+  selectableSlot("2026-09-14", "morning"),
+  selectableSlot("2026-09-14", "evening"),
+  selectableSlot("2026-09-15", "morning"),
+  selectableSlot("2026-09-21", "morning"),
+  selectableSlot("2026-09-23", "morning"),
+  selectableSlot("2026-09-24", "morning"),
+  selectableSlot("2026-09-29", "morning"),
+  selectableSlot("2026-09-30", "morning"),
+  selectableSlot("2026-10-01", "morning"),
+  selectableSlot("2026-10-05", "morning"),
+  selectableSlot("2026-10-05", "evening"),
+  selectableSlot("2026-10-06", "evening"),
+  selectableSlot("2026-10-07", "morning"),
+  selectableSlot("2026-10-08", "morning"),
+  selectableSlot("2026-10-13", "morning"),
+  selectableSlot("2026-10-13", "evening"),
+  selectableSlot("2026-10-14", "evening"),
+  selectableSlot("2026-10-15", "morning"),
+  selectableSlot("2026-10-16", "morning")
+];
+const selectableOpenSlots = [...openWeekendSlots, ...openWeekdaySlots];
+let otherReservations = buildOtherReservations(defaultStartDate, defaultEndDate, selectableOpenSlots);
 const specialSlots = [
   specialSlot("2026-07-10", "17:00", null, "Chris Lake Navy Pier Open Air"),
   specialSlot("2026-07-11", "17:00", null, "Chris Lake Navy Pier Open Air"),
@@ -433,12 +368,69 @@ function otherReservation(date, slotId, note = "") {
   return { date, slotId, note };
 }
 
+function selectableSlot(date, slotId) {
+  return { date, slotId };
+}
+
+function buildOtherReservations(start, end, openSlots) {
+  const openSlotKeys = new Set(openSlots.map((item) => slotDocumentId(item.date, item.slotId)));
+  const boatSlotKeys = new Set(boatReservations.map((item) => slotDocumentId(item.date, item.slotId)));
+  const reservations = [];
+
+  for (const date of eachDay(start, end)) {
+    const dateKey = toKey(date);
+    for (const slot of slots) {
+      const key = slotDocumentId(dateKey, slot.id);
+      if (!openSlotKeys.has(key) && !boatSlotKeys.has(key)) {
+        reservations.push(otherReservation(dateKey, slot.id));
+      }
+    }
+  }
+
+  return reservations;
+}
+
 function slotDocumentId(date, slotId) {
   return `${date}_${slotId}`;
 }
 
 function slotDataFor(date, slotId) {
-  return firebaseSlotState.byKey.get(slotDocumentId(date, slotId)) || null;
+  const slot = slots.find((item) => item.id === slotId);
+  const reservation = boatReservations.find((item) => item.date === date && item.slotId === slotId);
+  if (reservation) {
+    return {
+      id: slotDocumentId(date, slotId),
+      date,
+      slotId,
+      label: slot?.name || slotId,
+      shortName: slot?.shortName || slotId,
+      timeLabel: slot?.timeLabel || "",
+      capacity: defaultSlotCapacity,
+      rsvpCount: 0,
+      status: "open",
+      source: "boat",
+      note: reservation.note || ""
+    };
+  }
+
+  const otherReservation = otherReservations.find((item) => item.date === date && item.slotId === slotId);
+  if (otherReservation) {
+    return {
+      id: slotDocumentId(date, slotId),
+      date,
+      slotId,
+      label: slot?.name || slotId,
+      shortName: slot?.shortName || slotId,
+      timeLabel: slot?.timeLabel || "",
+      capacity: 0,
+      rsvpCount: 0,
+      status: "other-reserved",
+      source: "other",
+      note: otherReservation.note || ""
+    };
+  }
+
+  return null;
 }
 
 function rsvpSlotId(item) {
@@ -491,27 +483,25 @@ function slotStatusLabel(item) {
   return String(slotData.status).replace(/-/g, " ");
 }
 
-async function loadFirebaseSlots() {
+async function loadFirebaseRsvpData() {
   try {
     const config = await import("./firebase-config.js");
     if (!config.hasFirebaseConfig()) {
-      firebaseSlotState.configured = false;
-      firebaseSlotState.loaded = false;
+      firebaseState.configured = false;
+      firebaseState.loaded = false;
       return;
     }
 
     const api = await import("./firebase-client.js");
-    const result = await api.loadPublicSlots();
-    firebaseSlotState.configured = result.configured;
-    firebaseSlotState.loaded = true;
-    firebaseSlotState.error = "";
-    applyFirebaseSlots(result.slots);
+    firebaseState.configured = api.firebaseIsConfigured();
+    firebaseState.loaded = true;
+    firebaseState.error = "";
     await loadFirebaseSummaries(api);
     await loadFirebaseProfiles(api);
   } catch (error) {
-    firebaseSlotState.error = error && error.message ? error.message : String(error);
-    firebaseSlotState.loaded = false;
-    console.error("Unable to load Firebase slots.", error);
+    firebaseState.error = error && error.message ? error.message : String(error);
+    firebaseState.loaded = false;
+    console.error("Unable to load Firebase RSVP data.", error);
   }
 }
 
@@ -579,48 +569,6 @@ function applyRsvpSummaries(summaries) {
     });
   }
   rsvpState.summariesBySlotId = bySlotId;
-}
-
-function applyFirebaseSlots(firebaseSlots) {
-  const normalized = firebaseSlots
-    .map(normalizeFirebaseSlot)
-    .filter(Boolean);
-
-  if (!normalized.length) return;
-
-  firebaseSlotState.byKey = new Map(normalized.map((item) => [slotDocumentId(item.date, item.slotId), item]));
-  boatReservations = normalized
-    .filter((item) => item.source === "boat")
-    .map(firebaseSlotToReservation);
-  otherReservations = normalized
-    .filter((item) => item.source === "other")
-    .map(firebaseSlotToReservation);
-}
-
-function normalizeFirebaseSlot(item) {
-  if (!item || !item.date || !item.slotId) return null;
-  return {
-    firebaseSlotId: item.id || slotDocumentId(item.date, item.slotId),
-    date: String(item.date),
-    slotId: String(item.slotId),
-    label: item.label || "",
-    shortName: item.shortName || "",
-    timeLabel: item.timeLabel || "",
-    capacity: Number(item.capacity || 0),
-    rsvpCount: Number(item.rsvpCount || 0),
-    status: item.status || "open",
-    source: item.source === "other" ? "other" : "boat",
-    note: item.note || ""
-  };
-}
-
-function firebaseSlotToReservation(item) {
-  return {
-    date: item.date,
-    slotId: item.slotId,
-    note: item.note,
-    firebaseSlotId: item.firebaseSlotId
-  };
 }
 
 function specialSlot(date, startTime, endTime, title) {
@@ -1435,7 +1383,7 @@ function reservedSlotDetailMarkup(date, item) {
   const hasSelectedProfile = Boolean(selectedRsvpProfile());
   const selectedProfileAlreadyGoing = selectedProfileIsGoing(item);
   const buttonLabel = !hasSelectedProfile ? "Select profile" : selectedProfileAlreadyGoing ? "Going" : isOpen && hasCapacity ? "RSVP" : "Full";
-  const buttonDisabled = !hasSelectedProfile || selectedProfileAlreadyGoing || !isOpen || !hasCapacity || !firebaseSlotState.configured;
+  const buttonDisabled = !hasSelectedProfile || selectedProfileAlreadyGoing || !isOpen || !hasCapacity || !firebaseState.configured;
 
   return `
     <div class="reserved-slot-row" role="row">
@@ -2599,7 +2547,7 @@ function escapeHtml(value) {
 
 async function boot() {
   loadPlanner();
-  await loadFirebaseSlots();
+  await loadFirebaseRsvpData();
 
   if (els.reservedOnlyCalendar && els.reservedOnlyList) {
     renderSource();
