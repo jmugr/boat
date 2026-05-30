@@ -16,7 +16,7 @@ This site helps pick the best summer event slots by comparing candidate dates an
 
 The default planning window is:
 
-- Start: `2026-05-24`
+- Start: the later of today's date or `2026-05-24`
 - End: `2026-10-18`
 
 The default event filter is weekends only. Event length can be changed from 1 to 4 days.

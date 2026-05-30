@@ -4,6 +4,21 @@ Static summer planning app for comparing potential boat/event dates against out-
 
 Open `index.html` directly in a browser for the reserved calendar homepage. The summer planner is available at `summer-planner.html`. The app has no build step.
 
+## Local Hosting
+
+From the repo root, run the static server directly:
+
+```powershell
+node local-server.js
+```
+
+Then open:
+
+- Reserved calendar: `http://127.0.0.1:8000/index.html`
+- Summer planner: `http://127.0.0.1:8000/summer-planner.html`
+
+Leave the PowerShell window running while testing. Stop it with `Ctrl+C`.
+
 ## What It Does
 
 - Ranks AM and PM event slots by how many selected people are available.

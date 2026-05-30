@@ -116,7 +116,8 @@ const els = {
 const storageKey = "my-way-planner-oots-v1";
 const extendedWatersStart = "2026-06-20";
 const extendedWatersEnd = "2026-09-20";
-const defaultStartDate = "2026-05-24";
+const calendarStartFloor = "2026-05-24";
+const defaultStartDate = maxDateKey(calendarStartFloor, todayKey());
 const defaultEndDate = "2026-10-18";
 const captains = new Set(["Joe", "Sean"]);
 const captainOrder = ["Joe", "Sean"];
@@ -770,6 +771,17 @@ function maxDateKey(a, b) {
 
 function minDateKey(a, b) {
   return parseDate(a) <= parseDate(b) ? a : b;
+}
+
+function todayKey() {
+  return toKey(new Date());
+}
+
+function setEffectiveStartDate() {
+  if (!els.startDate) return;
+  els.startDate.value = defaultStartDate;
+  els.startDate.defaultValue = defaultStartDate;
+  els.startDate.min = defaultStartDate;
 }
 
 function renderPlanner() {
@@ -2549,6 +2561,7 @@ async function boot() {
   renderTrackingStatus();
   loadPlanner();
   await loadFirebaseRsvpData();
+  setEffectiveStartDate();
 
   if (els.reservedOnlyCalendar && els.reservedOnlyList) {
     renderSource();
