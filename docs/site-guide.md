@@ -120,7 +120,7 @@ Current special entries are:
 - Independence Day: `2026-07-04`, all day
 - BLVCKSCENE: `2026-07-09` through `2026-07-12`, `9:00 AM-4:00 PM`
 - Mac Race Start: `2026-07-11 9:00 AM-4:00 PM`
-- Chicago Scene: `2026-07-25 9:00 AM-4:00 PM`
+- Chicago Scene with DJ Skinny P: `2026-07-25 9:00 AM-4:00 PM`
 - Lollapalooza: `2026-07-30` through `2026-08-02`, all day
 - Air and Water Show Practice: `2026-08-14 9:00 AM-4:00 PM`
 - Air and Water Show: `2026-08-15 10:30 AM-3:00 PM`

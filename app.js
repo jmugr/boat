@@ -341,7 +341,7 @@ const specialSlots = [
   specialSlot("2026-07-11", "09:00", "16:00", "BLVCKSCENE"),
   specialSlot("2026-07-11", "09:00", "16:00", "Mac Race Start"),
   specialSlot("2026-07-12", "09:00", "16:00", "BLVCKSCENE"),
-  specialSlot("2026-07-25", "09:00", "16:00", "Chicago Scene"),
+  specialSlot("2026-07-25", "09:00", "16:00", "Chicago Scene with DJ Skinny P"),
   specialDate("2026-07-30", "Lollapalooza"),
   specialDate("2026-07-31", "Lollapalooza"),
   specialDate("2026-08-01", "Lollapalooza"),
