@@ -124,6 +124,7 @@ const captainOrder = ["Joe", "Sean"];
 const crewGuestOfNone = "N/A";
 const crewProfileIdPrefix = "crew:";
 const seededCrewRsvpIdPrefix = "crew_going_";
+const rsvpCalendarFunctionUrl = "https://us-central1-boat-5baa0.cloudfunctions.net/rsvpCalendar";
 let selectedDateKey = null;
 const monthNames = new Intl.DateTimeFormat("en-US", { month: "long", year: "numeric" });
 const compactDate = new Intl.DateTimeFormat("en-US", { month: "short", day: "numeric" });
@@ -145,10 +146,10 @@ const slots = [
     id: "evening",
     name: "Evening",
     shortName: "PM",
-    timeLabel: "5pm-8am",
+    timeLabel: "5pm-11pm",
     startHour: 17,
-    endHour: 8,
-    endOffsetDays: 1
+    endHour: 23,
+    endOffsetDays: 0
   }
 ];
 const firebaseState = {
@@ -502,18 +503,19 @@ function applyRsvpProfiles(profiles) {
   rsvpState.profiles = profiles
     .map(normalizeRsvpProfile)
     .filter(Boolean)
-    .filter((profile) => !isCanonicalCrewProfileDoc(profile))
     .sort((a, b) => a.name.localeCompare(b.name) || a.guestOf.localeCompare(b.guestOf));
 }
 
 function normalizeRsvpProfile(profile) {
   if (!profile || !profile.id || !profile.name || !profile.guestOf || !profile.contact) return null;
-  return {
+  const normalized = {
     id: String(profile.id),
     name: String(profile.name).trim(),
     guestOf: String(profile.guestOf).trim(),
     contact: String(profile.contact).trim()
   };
+  if (profile.calendarToken) normalized.calendarToken = String(profile.calendarToken);
+  return normalized;
 }
 
 function isCanonicalCrewProfileDoc(profile) {
@@ -545,7 +547,8 @@ function applyRsvpSummaries(summaries) {
       name: String(summary.name || "").trim(),
       guestOf: String(summary.guestOf || "").trim(),
       status: summary.status || "confirmed",
-      createdAt: summary.createdAt || null
+      createdAt: summary.createdAt || null,
+      profileId: summary.profileId ? String(summary.profileId) : ""
     });
   }
   rsvpState.summariesBySlotId = bySlotId;
@@ -1454,9 +1457,19 @@ function selectedRsvpProfile() {
   return profileById(rsvpState.selectedProfileId);
 }
 
+function firestoreProfileId(profile) {
+  if (!profile) return "";
+  return profile.sourceId || profile.id || "";
+}
+
 function selectedProfileOwnsSummary(summary) {
   const profile = selectedRsvpProfile();
   if (!profile || !summary) return false;
+  const profileId = firestoreProfileId(profile);
+
+  if (summary.profileId && profileId) {
+    return summary.profileId === profileId;
+  }
 
   const seededCrewId = seededCrewIdFromRsvpId(summary.id);
   if (seededCrewId) {
@@ -1491,13 +1504,45 @@ function setFormFromProfile(form, profile) {
   form.elements.contact.value = profile.contact;
 }
 
+function profileCalendarUrl(profile) {
+  const profileId = firestoreProfileId(profile);
+  if (!profileId || !profile?.calendarToken) return "";
+  const params = new URLSearchParams({
+    profileId,
+    token: profile.calendarToken
+  });
+  return `${rsvpCalendarFunctionUrl}?${params.toString()}`;
+}
+
+function profileCalendarControlsMarkup(profile) {
+  if (!profile) return "";
+  const url = profileCalendarUrl(profile);
+  return `
+    <div class="profile-calendar" data-profile-calendar>
+      <div>
+        <strong>Calendar subscription</strong>
+        <span>${url ? "Calendar link is active for this profile." : "No calendar link has been created for this profile."}</span>
+      </div>
+      <div class="profile-calendar__actions">
+        ${url
+          ? `
+            <a class="ghost-button" href="${escapeHtml(url)}" target="_blank" rel="noopener">Open link</a>
+            <button class="ghost-button" type="button" data-calendar-copy>Copy link</button>
+            <button class="ghost-button" type="button" data-calendar-remove>Remove calendar link</button>
+          `
+          : `<button class="ghost-button" type="button" data-calendar-create>Create calendar link</button>`}
+      </div>
+    </div>
+  `;
+}
+
 function formControl(form, name) {
   return form?.elements?.namedItem(name) || form?.elements?.[name] || null;
 }
 
 function upsertLocalProfile(profile) {
   const normalized = normalizeRsvpProfile(profile);
-  if (!normalized || isCanonicalCrewProfileDoc(normalized)) return;
+  if (!normalized) return;
   const index = rsvpState.profiles.findIndex((item) => item.id === normalized.id);
   if (index === -1) {
     rsvpState.profiles = [...rsvpState.profiles, normalized];
@@ -1620,6 +1665,9 @@ function renderProfileSection() {
         <label for="profileContact">Phone number</label>
         <input id="profileContact" name="contact" type="tel" autocomplete="tel" required maxlength="40">
       </div>
+      <div class="field-row field-row--wide" id="profileCalendarControls">
+        ${profileCalendarControlsMarkup(selectedRsvpProfile())}
+      </div>
       <p class="rsvp-form__message" id="rsvpProfileMessage" aria-live="polite">${rsvpState.profilesError ? "Custom profiles unavailable." : ""}</p>
       <div class="rsvp-form__actions">
         <button type="submit">Save profile</button>
@@ -1642,13 +1690,20 @@ function resetProfileForm() {
   formControl(form, "selectedProfile").innerHTML = profileOptionsMarkup();
   form.elements.guestOf.innerHTML = editableProfileGuestOfOptionsMarkup();
   setProfileFormReadOnly(form, false);
+  renderProfileCalendarControls(null);
   document.querySelector("#rsvpProfileMessage").textContent = "";
+}
+
+function renderProfileCalendarControls(profile) {
+  const controls = document.querySelector("#profileCalendarControls");
+  if (controls) controls.innerHTML = profileCalendarControlsMarkup(profile);
 }
 
 function fillProfileForm(profile) {
   const form = document.querySelector("#rsvpProfileForm");
   if (!form || !profile) return;
   formControl(form, "selectedProfile").innerHTML = profileOptionsMarkup(profile.id);
+  renderProfileCalendarControls(profile);
   if (profile.readOnly) {
     form.elements.profileId.value = "";
     form.elements.name.value = profile.name;
@@ -1681,7 +1736,7 @@ async function saveProfileFromValues(values, profileId = "") {
   const api = await import("./firebase-client.js");
   if (profileId) {
     await api.updateRsvpProfile(profileId, values);
-    upsertLocalProfile({ id: profileId, ...values });
+    upsertLocalProfile({ id: profileId, calendarToken: existingProfile?.calendarToken, ...values });
     return profileId;
   }
   const newProfileId = await api.createRsvpProfile(values);
@@ -1714,6 +1769,86 @@ async function submitProfileForm(event) {
     message.textContent = error && error.message ? error.message : "Unable to save profile.";
   } finally {
     rsvpState.submitting = false;
+  }
+}
+
+async function createCalendarForSelectedProfile() {
+  if (rsvpState.submitting) return;
+  const profile = selectedRsvpProfile();
+  const profileId = firestoreProfileId(profile);
+  const message = document.querySelector("#rsvpProfileMessage");
+  if (!profile || !profileId) {
+    if (message) message.textContent = "Choose a profile before creating a calendar link.";
+    return;
+  }
+
+  rsvpState.submitting = true;
+  if (message) message.textContent = "Creating calendar link...";
+  try {
+    const api = await import("./firebase-client.js");
+    const token = await api.createProfileCalendar(profileId, {
+      name: profile.name,
+      guestOf: profile.guestOf,
+      contact: profile.contact
+    });
+    upsertLocalProfile({
+      id: profileId,
+      name: profile.name,
+      guestOf: profile.guestOf,
+      contact: profile.contact,
+      calendarToken: token
+    });
+    renderProfileSection();
+    fillProfileForm(profileById(rsvpState.selectedProfileId));
+    document.querySelector("#rsvpProfileMessage").textContent = "Calendar link created.";
+  } catch (error) {
+    if (message) message.textContent = error && error.message ? error.message : "Unable to create calendar link.";
+  } finally {
+    rsvpState.submitting = false;
+  }
+}
+
+async function removeCalendarForSelectedProfile() {
+  if (rsvpState.submitting) return;
+  const profile = selectedRsvpProfile();
+  const profileId = firestoreProfileId(profile);
+  const message = document.querySelector("#rsvpProfileMessage");
+  if (!profile || !profileId) {
+    if (message) message.textContent = "Choose a profile before removing a calendar link.";
+    return;
+  }
+  if (!window.confirm("Remove this calendar link? Existing subscribed URLs will stop working.")) return;
+
+  rsvpState.submitting = true;
+  if (message) message.textContent = "Removing calendar link...";
+  try {
+    const api = await import("./firebase-client.js");
+    await api.removeProfileCalendar(profileId);
+    upsertLocalProfile({
+      id: profileId,
+      name: profile.name,
+      guestOf: profile.guestOf,
+      contact: profile.contact
+    });
+    renderProfileSection();
+    fillProfileForm(profileById(rsvpState.selectedProfileId));
+    document.querySelector("#rsvpProfileMessage").textContent = "Calendar link removed.";
+  } catch (error) {
+    if (message) message.textContent = error && error.message ? error.message : "Unable to remove calendar link.";
+  } finally {
+    rsvpState.submitting = false;
+  }
+}
+
+async function copySelectedProfileCalendarUrl() {
+  const url = profileCalendarUrl(selectedRsvpProfile());
+  const message = document.querySelector("#rsvpProfileMessage");
+  if (!url) return;
+  try {
+    await navigator.clipboard.writeText(url);
+    if (message) message.textContent = "Calendar link copied.";
+  } catch (error) {
+    if (message) message.textContent = url;
   }
 }
 
@@ -1758,7 +1893,8 @@ function addOptimisticSummary(reservation, values, summaryId) {
       name: values.name,
       guestOf: values.guestOf,
       status: "confirmed",
-      createdAt: new Date()
+      createdAt: new Date(),
+      profileId: values.profileId || ""
     }
   ]);
   rsvpState.summariesLoaded = true;
@@ -1783,7 +1919,8 @@ async function submitRsvpForm(event) {
     slotId: rsvpSlotId(reservation),
     name: form.elements.name.value.trim(),
     guestOf: form.elements.guestOf.value,
-    contact: form.elements.contact.value.trim()
+    contact: form.elements.contact.value.trim(),
+    profileId: firestoreProfileId(selectedRsvpProfile())
   };
 
   if (!values.name || !values.guestOf || !values.contact) {
@@ -2461,6 +2598,7 @@ function crewRsvpProfiles() {
 function builtInCrewProfiles() {
   return crewRsvpProfiles().map((profile) => ({
     ...profile,
+    calendarToken: rsvpState.profiles.find((item) => item.id === profile.id)?.calendarToken,
     id: crewProfileId(profile.id),
     sourceId: profile.id,
     readOnly: true
@@ -2468,10 +2606,12 @@ function builtInCrewProfiles() {
 }
 
 function editableRsvpProfiles() {
-  return rsvpState.profiles.map((profile) => ({
-    ...profile,
-    readOnly: false
-  }));
+  return rsvpState.profiles
+    .filter((profile) => !isCanonicalCrewProfileDoc(profile))
+    .map((profile) => ({
+      ...profile,
+      readOnly: false
+    }));
 }
 
 function allRsvpProfiles() {
@@ -2563,6 +2703,18 @@ async function boot() {
       const removeButton = event.target.closest("[data-rsvp-remove]");
       if (removeButton) {
         removeRsvpSummary(removeButton.dataset.rsvpDate, removeButton.dataset.rsvpSlot, removeButton.dataset.rsvpRemove);
+        return;
+      }
+      if (event.target.closest("[data-calendar-create]")) {
+        createCalendarForSelectedProfile();
+        return;
+      }
+      if (event.target.closest("[data-calendar-copy]")) {
+        copySelectedProfileCalendarUrl();
+        return;
+      }
+      if (event.target.closest("[data-calendar-remove]")) {
+        removeCalendarForSelectedProfile();
         return;
       }
       const rsvpButton = event.target.closest("[data-rsvp-date][data-rsvp-slot]");

@@ -5,10 +5,11 @@
   "description": "Static My Way boat planner and RSVP calendar.",
   "scripts": {
     "dev": "node local-server.js",
-    "check": "node --check app.js && node --check firebase-client.js && node --check firebase-config.js && node --check scripts/seed-firebase.js && node --check scripts/seed-rsvp-profiles.js && node --check scripts/seed-crew-rsvps-from-availability.js",
+    "check": "node --check app.js && node --check firebase-client.js && node --check firebase-config.js && node --check functions/index.js && node --check scripts/seed-firebase.js && node --check scripts/seed-rsvp-profiles.js && node --check scripts/seed-crew-rsvps-from-availability.js && node --check scripts/backfill-calendar-fields.js",
     "seed:firebase": "node scripts/seed-firebase.js",
     "seed:profiles": "node scripts/seed-rsvp-profiles.js",
     "seed:rsvps:crew": "node scripts/seed-crew-rsvps-from-availability.js",
+    "backfill:calendar-fields:dry-run": "node scripts/backfill-calendar-fields.js --dry-run",
     "deploy:firestore": "firebase deploy --only firestore:rules,firestore:indexes",
     "deploy:functions": "firebase deploy --only functions"
   },
