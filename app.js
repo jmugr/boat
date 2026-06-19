@@ -237,7 +237,8 @@ let boatReservations = [
   boatReservation("2026-09-11", "morning"),
   boatReservation("2026-09-11", "evening"),
   boatReservation("2026-09-12", "morning"),
-  boatReservation("2026-09-20", "morning")
+  boatReservation("2026-09-20", "morning"),
+  boatReservation("2026-10-03", "morning")
 ];
 const openWeekendSlots = [
   selectableSlot("2026-06-14", "evening"),
@@ -253,7 +254,6 @@ const openWeekendSlots = [
   selectableSlot("2026-09-06", "morning"),
   selectableSlot("2026-09-07", "evening"),
   selectableSlot("2026-09-27", "evening"),
-  selectableSlot("2026-10-03", "morning"),
   selectableSlot("2026-10-03", "evening"),
   selectableSlot("2026-10-04", "morning"),
   selectableSlot("2026-10-04", "evening"),
