@@ -1732,7 +1732,9 @@ function summaryForReservation(reservation, summaryId) {
 }
 
 function renderProfileSection() {
-  if (!els.reservedOnlyList) return;
+  const host = document.querySelector(".reserved-page");
+  if (!host) return;
+
   const existing = document.querySelector("#rsvpProfilesSection");
   const section = existing || document.createElement("section");
   const profiles = allRsvpProfiles();
@@ -1776,7 +1778,7 @@ function renderProfileSection() {
   `;
 
   if (!existing) {
-    document.querySelector(".reserved-page")?.prepend(section);
+    host.prepend(section);
   }
   section.querySelector("#rsvpProfileForm")?.addEventListener("submit", submitProfileForm);
 }
