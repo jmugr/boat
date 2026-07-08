@@ -154,6 +154,12 @@ h3 {
   background: rgba(12, 29, 33, .56);
 }
 
+.page-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
 .draft-banner {
   display: flex;
   flex-wrap: wrap;
@@ -186,7 +192,8 @@ h3 {
 
 .controls,
 .results,
-.source {
+.source,
+.info-page {
   border: 1px solid var(--line);
   border-radius: 8px;
   background: var(--panel);
@@ -1044,6 +1051,73 @@ select {
   background: var(--reserved);
 }
 
+.info-page {
+  padding: 22px;
+}
+
+.info-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.info-panel {
+  display: grid;
+  align-content: start;
+  gap: 14px;
+  padding: 16px;
+  border: 1px solid #b7d3dc;
+  border-radius: 8px;
+  background: #f8fbff;
+}
+
+.info-panel h3 {
+  margin-bottom: 0;
+}
+
+.spec-list {
+  display: grid;
+  gap: 10px;
+  margin: 0;
+}
+
+.spec-list div {
+  display: grid;
+  grid-template-columns: minmax(120px, .7fr) minmax(0, 1fr);
+  gap: 12px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid #dbe6eb;
+}
+
+.spec-list div:last-child {
+  padding-bottom: 0;
+  border-bottom: 0;
+}
+
+.spec-list dt {
+  color: var(--muted);
+  font-size: .78rem;
+  font-weight: 850;
+}
+
+.spec-list dd {
+  margin: 0;
+  color: var(--ink);
+  font-weight: 760;
+}
+
+.instruction-list {
+  display: grid;
+  gap: 10px;
+  margin: 0;
+  padding-left: 22px;
+  color: #35434a;
+}
+
+.instruction-list li {
+  padding-left: 4px;
+}
+
 .day[data-draft-closed-day="true"]:not([data-fully-reserved="true"]):not([data-fully-boat-reserved="true"]) {
   color: #59636b;
   border-color: #aeb8c1;
@@ -1723,6 +1797,7 @@ button:disabled:hover {
   .date-results,
   .date-detail__slots,
   .boat-reserved__grid,
+  .info-grid,
   .profile-form,
   .source-grid {
     grid-template-columns: 1fr;
@@ -1769,6 +1844,11 @@ button:disabled:hover {
     grid-template-columns: 1fr;
     gap: 7px;
     padding: 12px 14px;
+  }
+
+  .spec-list div {
+    grid-template-columns: 1fr;
+    gap: 3px;
   }
 
   .rsvp-form {

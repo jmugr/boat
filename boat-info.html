@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>My Way Boat Info</title>
+    <link rel="stylesheet" href="styles.css">
+    <script>
+      window.umamiBeforeSendHandler = function(type, payload) {
+        try {
+          if (localStorage.getItem("is_my_device") === "true") {
+            return false;
+          }
+        } catch (_) {
+          // Ignore storage access errors and continue tracking.
+        }
+
+        return payload;
+      };
+    </script>
+    <script defer src="https://cloud.umami.is/script.js" data-website-id="29ac1f53-e8da-4030-aa93-c7ea40858ef0" data-before-send="umamiBeforeSendHandler"></script>
+  </head>
+  <body>
+    <main class="shell">
+      <section class="mast mast--compact">
+        <img src="assets/jeanneau-sun-odyssey-45ds-hero.png" alt="" class="mast__image">
+        <div class="mast__content">
+          <p class="eyebrow">My Way</p>
+          <h1>Boat Info</h1>
+          <div class="page-links" aria-label="Page navigation">
+            <a class="page-link" href="index.html">Reserved calendar</a>
+            <a class="page-link" href="summer-planner.html">Summer planner</a>
+          </div>
+        </div>
+      </section>
+
+      <section class="workspace">
+        <section class="info-page" aria-labelledby="boatInfoTitle">
+          <div class="section-head">
+            <div>
+              <p class="eyebrow">2008 Jeanneau Sun Odyssey 45 DS</p>
+              <h2 id="boatInfoTitle">Deck saloon cruiser details</h2>
+            </div>
+          </div>
+
+          <div class="info-grid">
+            <article class="info-panel">
+              <h3>Boat Details</h3>
+              <dl class="spec-list">
+                <div>
+                  <dt>Builder</dt>
+                  <dd>Jeanneau</dd>
+                </div>
+                <div>
+                  <dt>Designer</dt>
+                  <dd>Philippe Briand</dd>
+                </div>
+                <div>
+                  <dt>Type</dt>
+                  <dd>Deck saloon cruising sailboat</dd>
+                </div>
+                <div>
+                  <dt>Length overall</dt>
+                  <dd>45 ft 1 in</dd>
+                </div>
+                <div>
+                  <dt>Beam</dt>
+                  <dd>14 ft 4 in</dd>
+                </div>
+                <div>
+                  <dt>Draft</dt>
+                  <dd>6 ft 9 in standard keel</dd>
+                </div>
+                <div>
+                  <dt>Displacement</dt>
+                  <dd>About 21,826 lb</dd>
+                </div>
+                <div>
+                  <dt>Engine</dt>
+                  <dd>Yanmar 54 hp diesel</dd>
+                </div>
+                <div>
+                  <dt>Rig</dt>
+                  <dd>Fractional sloop</dd>
+                </div>
+              </dl>
+            </article>
+
+            <article class="info-panel">
+              <h3>Bluetooth Speaker</h3>
+              <ol class="instruction-list">
+                <li>Press <strong>CALL</strong>, rotate the control dial to select <strong>PAIRING</strong>, then press it.</li>
+                <li>Perform pairing on your phone. Look for <strong>Sony Automotive</strong>.</li>
+                <li>If passkey input is required, enter <strong>0000</strong>.</li>
+                <li>When pairing is made, the Bluetooth logo stays lit.</li>
+                <li>Switch back to <strong>Bluetooth Audio</strong> after connecting.</li>
+              </ol>
+            </article>
+          </div>
+        </section>
+      </section>
+    </main>
+  </body>
+</html>
