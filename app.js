@@ -106,6 +106,7 @@ const els = {
   calendar: document.querySelector("#calendar"),
   dateDetail: document.querySelector("#dateDetail"),
   boatReserved: document.querySelector("#boatReserved"),
+  draftBanner: document.querySelector("#draftBanner"),
   specialSummary: document.querySelector("#specialSummary"),
   sourceGrid: document.querySelector("#sourceGrid"),
   reservedOnlyCalendar: document.querySelector("#reservedOnlyCalendar"),
@@ -125,6 +126,8 @@ const crewGuestOfNone = "N/A";
 const crewProfileIdPrefix = "crew:";
 const seededCrewRsvpIdPrefix = "crew_going_";
 const rsvpCalendarFunctionUrl = "https://us-central1-boat-5baa0.cloudfunctions.net/rsvpCalendar";
+const draftWeekendOpportunity = 11;
+const draftWeekdayOpportunity = 16;
 let selectedDateKey = null;
 const monthNames = new Intl.DateTimeFormat("en-US", { month: "long", year: "numeric" });
 const compactDate = new Intl.DateTimeFormat("en-US", { month: "short", day: "numeric" });
@@ -232,13 +235,17 @@ let boatReservations = [
   boatReservation("2026-08-13", "evening"),
   boatReservation("2026-08-18", "evening"),
   boatReservation("2026-09-03", "evening"),
+  boatReservation("2026-09-06", "morning"),
   boatReservation("2026-09-10", "morning"),
   boatReservation("2026-09-10", "evening"),
   boatReservation("2026-09-11", "morning"),
   boatReservation("2026-09-11", "evening"),
   boatReservation("2026-09-12", "morning"),
   boatReservation("2026-09-20", "morning"),
-  boatReservation("2026-10-03", "morning")
+  boatReservation("2026-10-03", "morning"),
+  boatReservation("2026-10-05", "evening"),
+  boatReservation("2026-10-13", "evening"),
+  boatReservation("2026-10-14", "evening")
 ];
 const openWeekendSlots = [
   selectableSlot("2026-06-14", "evening"),
@@ -251,7 +258,6 @@ const openWeekendSlots = [
   selectableSlot("2026-08-23", "evening"),
   selectableSlot("2026-08-30", "evening"),
   selectableSlot("2026-09-04", "evening"),
-  selectableSlot("2026-09-06", "morning"),
   selectableSlot("2026-09-07", "evening"),
   selectableSlot("2026-09-27", "evening"),
   selectableSlot("2026-10-03", "evening"),
@@ -300,13 +306,10 @@ const openWeekdaySlots = [
   selectableSlot("2026-09-30", "morning"),
   selectableSlot("2026-10-01", "morning"),
   selectableSlot("2026-10-05", "morning"),
-  selectableSlot("2026-10-05", "evening"),
   selectableSlot("2026-10-06", "evening"),
   selectableSlot("2026-10-07", "morning"),
   selectableSlot("2026-10-08", "morning"),
   selectableSlot("2026-10-13", "morning"),
-  selectableSlot("2026-10-13", "evening"),
-  selectableSlot("2026-10-14", "evening"),
   selectableSlot("2026-10-15", "morning"),
   selectableSlot("2026-10-16", "morning")
 ];
@@ -784,6 +787,7 @@ function renderPlanner() {
   renderCalendar(calendarPeople, searchResultSlots);
   renderDateDetail(calendarPeople);
   renderSpecialSummary();
+  renderDraftBanner();
 }
 
 function candidateEndDate(end, length) {
@@ -791,10 +795,15 @@ function candidateEndDate(end, length) {
 }
 
 function buildDateCandidates(starts, requiredPeople, displayPeople, length, end) {
+  const draftCounts = draftedSlotCounts();
   return flatten(
     starts.map((date) =>
       flatten(slots.map((slot) => {
-      if (!sequenceFitsRange(date, slot, length, end) || isReservedCandidate(date, slot, length)) return [];
+      if (
+        !sequenceFitsRange(date, slot, length, end) ||
+        isReservedCandidate(date, slot, length) ||
+        isDraftBucketClosed(date, slot, length, draftCounts)
+      ) return [];
       const requiredConflicts = conflictsForSlot(date, slot, length, requiredPeople);
       if (requiredConflicts.length) return [];
       const conflicts = conflictsForSlot(date, slot, length, displayPeople);
@@ -1023,6 +1032,8 @@ function pickIndicators(date, slot, length = 1) {
 }
 
 function isWeekendSlot(date, slot, length = 1) {
+  if (holidaysForWindow(date, slot, length).length) return true;
+
   const event = slotWindow(date, slot, length);
   for (let day = new Date(event.start); day < event.end; day = addDays(day, 1)) {
     const dayStart = new Date(day.getFullYear(), day.getMonth(), day.getDate());
@@ -1197,6 +1208,54 @@ function renderSpecialSummary() {
       ${[...grouped.entries()].map(specialGroupMarkup).join("")}
     </div>
   `;
+}
+
+function renderDraftBanner() {
+  if (!els.draftBanner) return;
+
+  const counts = draftedSlotCounts();
+  els.draftBanner.innerHTML = `
+    <span>
+      <strong>${counts.weekend}/${draftWeekendOpportunity}</strong>
+      weekend drafted
+    </span>
+    <span>
+      <strong>${counts.weekday}/${draftWeekdayOpportunity}</strong>
+      weekday drafted
+    </span>
+  `;
+}
+
+function draftedSlotCounts() {
+  return boatReservations.reduce((counts, item) => {
+    const slot = slots.find((candidate) => candidate.id === item.slotId);
+    if (!slot) return counts;
+
+    if (isWeekendSlot(parseDate(item.date), slot, 1)) {
+      counts.weekend += 1;
+    } else {
+      counts.weekday += 1;
+    }
+    return counts;
+  }, { weekend: 0, weekday: 0 });
+}
+
+function draftBucketForSlot(date, slot, length = 1) {
+  return isWeekendSlot(date, slot, length) ? "weekend" : "weekday";
+}
+
+function draftBucketOpportunity(bucket) {
+  return bucket === "weekend" ? draftWeekendOpportunity : draftWeekdayOpportunity;
+}
+
+function isDraftBucketClosed(date, slot, length = 1, counts = draftedSlotCounts()) {
+  const bucket = draftBucketForSlot(date, slot, length);
+  return counts[bucket] >= draftBucketOpportunity(bucket);
+}
+
+function draftClosedLabel(date, slot, length = 1) {
+  const bucket = draftBucketForSlot(date, slot, length);
+  return `${bucket[0].toUpperCase()}${bucket.slice(1)} draft is full`;
 }
 
 function renderBoatReserved(people) {
@@ -1976,13 +2035,14 @@ function renderCalendar(people, searchResultSlots = new Set()) {
   const months = [];
   const start = parseDate(els.startDate.value);
   const end = parseDate(els.endDate.value);
+  const draftCounts = draftedSlotCounts();
   let cursor = new Date(start.getFullYear(), start.getMonth(), 1);
   while (cursor <= end) {
     months.push(new Date(cursor));
     cursor = new Date(cursor.getFullYear(), cursor.getMonth() + 1, 1);
   }
 
-  els.calendar.innerHTML = months.map((month) => monthMarkup(month, people, start, end, searchResultSlots)).join("");
+  els.calendar.innerHTML = months.map((month) => monthMarkup(month, people, start, end, searchResultSlots, draftCounts)).join("");
 }
 
 function renderReservedOnlyPage() {
@@ -2172,7 +2232,7 @@ function reservedOnlySlotSummaryMarkup(reservations) {
   }).join("");
 }
 
-function monthMarkup(month, people, start, end, searchResultSlots) {
+function monthMarkup(month, people, start, end, searchResultSlots, draftCounts) {
   const first = new Date(month.getFullYear(), month.getMonth(), 1);
   const last = new Date(month.getFullYear(), month.getMonth() + 1, 0);
   const visibleStart = start > first ? start : first;
@@ -2192,24 +2252,30 @@ function monthMarkup(month, people, start, end, searchResultSlots) {
     const specialOnDate = hasAllDaySpecial || (specials.length > 0 && specialSlotIds.size === 0);
     const daySlots = slots.map((slot) => {
       const conflicts = conflictsForSlot(date, slot, 1, people);
+      const isReserved = reservedSlotIds.has(slot.id);
+      const isOtherReserved = otherReservedSlotIds.has(slot.id);
       return {
+        date,
         slot,
         conflicts,
         level: levelFor(conflicts),
         names: [...new Set(conflicts.map((item) => item.person.split(" ")[0]))],
         indicators: slotIndicators(date, slot, 1),
         isSpecial: specialSlotIds.has(slot.id),
-        isReserved: reservedSlotIds.has(slot.id),
-        isOtherReserved: otherReservedSlotIds.has(slot.id),
+        isReserved,
+        isOtherReserved,
+        isDraftClosed: !isReserved && !isOtherReserved && isDraftBucketClosed(date, slot, 1, draftCounts),
         isSearchResult: searchResultSlots.has(`${dateKey}|${slot.id}`)
       };
     });
     const fullyBoatReserved = daySlots.every((item) => item.isReserved);
     const fullyReserved = daySlots.every((item) => item.isReserved || item.isOtherReserved);
+    const selectableSlots = daySlots.filter((item) => !item.isReserved && !item.isOtherReserved);
+    const fullyDraftClosed = !reservations.length && selectableSlots.length > 0 && selectableSlots.every((item) => item.isDraftClosed);
     const level = fullyReserved ? "reserved" : Math.max(...daySlots.map((item) => item.level));
     const ootCount = uniqueConflicts(flatten(daySlots.map((item) => item.conflicts))).length;
     return `
-      <button class="day" data-date="${dateKey}" data-level="${level}" data-special-date="${fullyReserved ? false : specialOnDate}" data-fully-reserved="${fullyReserved}" data-fully-boat-reserved="${fullyBoatReserved}" aria-pressed="${dateKey === selectedDateKey}" title="${dayTooltipFor(date, daySlots, people.length, specials)}">
+      <button class="day" data-date="${dateKey}" data-level="${level}" data-special-date="${fullyReserved ? false : specialOnDate}" data-fully-reserved="${fullyReserved}" data-fully-boat-reserved="${fullyBoatReserved}" data-draft-closed-day="${fullyDraftClosed}" aria-pressed="${dateKey === selectedDateKey}" title="${dayTooltipFor(date, daySlots, people.length, specials)}">
         <span class="day__head">
           <strong>${date.getDate()}</strong>
           ${ootCount ? `<span class="day__oot-count">${ootCount} OOT</span>` : ""}
@@ -2416,15 +2482,17 @@ function slotMarkup(item) {
     ? "Reserved by another group"
     : item.isReserved
     ? "Boat reserved"
+    : item.isDraftClosed
+    ? draftClosedLabel(item.date, item.slot)
     : item.indicators.map((indicator) => indicator.title).join(", ");
   const titleWithSearch = [item.isSearchResult ? "In Date Search results" : "", title].filter(Boolean).join("; ");
-  const marks = !item.isReserved && !item.isOtherReserved && item.indicators.length
+  const marks = !item.isReserved && !item.isOtherReserved && !item.isDraftClosed && item.indicators.length
     ? `<span class="slot-pill__marks">${item.indicators.map((indicator) => `<i data-type="${indicator.type}">${indicator.label[0]}</i>`).join("")}</span>`
     : "";
   const level = item.isOtherReserved ? "other-reserved" : item.isReserved ? "reserved" : item.level;
   const isSpecial = item.isOtherReserved ? false : item.isSpecial;
   return `
-    <span class="slot-pill" data-level="${level}" data-special-slot="${isSpecial}" data-reserved-slot="${item.isReserved}" data-other-reserved-slot="${item.isOtherReserved}" data-search-result-slot="${item.isSearchResult}" title="${escapeHtml(titleWithSearch)}">
+    <span class="slot-pill" data-level="${level}" data-special-slot="${isSpecial}" data-reserved-slot="${item.isReserved}" data-other-reserved-slot="${item.isOtherReserved}" data-draft-closed-slot="${item.isDraftClosed}" data-search-result-slot="${item.isSearchResult}" title="${escapeHtml(titleWithSearch)}">
       <span class="slot-pill__text">${item.slot.shortName}</span>
       ${marks}
     </span>
@@ -2444,7 +2512,7 @@ function dayTooltipFor(date, daySlots, peopleCount, specials = []) {
   const details = daySlots.map((item) => {
     const conflicts = uniqueConflicts(item.conflicts);
     const availability = `${peopleCount - conflicts.length}/${peopleCount} available`;
-    const status = conflicts.length ? conflicts.join(", ") : "clear";
+    const status = item.isDraftClosed ? draftClosedLabel(date, item.slot) : conflicts.length ? conflicts.join(", ") : "clear";
     const indicators = item.indicators.length ? `; ${item.indicators.map((indicator) => indicator.title).join(", ")}` : "";
     return `${item.slot.name} (${item.slot.timeLabel}): ${availability}; ${status}${indicators}`;
   });
