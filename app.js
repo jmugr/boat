@@ -111,7 +111,20 @@ const els = {
   sourceGrid: document.querySelector("#sourceGrid"),
   reservedOnlyCalendar: document.querySelector("#reservedOnlyCalendar"),
   reservedOnlyDateDetail: document.querySelector("#reservedOnlyDateDetail"),
-  reservedOnlyList: document.querySelector("#reservedOnlyList")
+  reservedOnlyList: document.querySelector("#reservedOnlyList"),
+  reservedStartDate: document.querySelector("#reservedStartDate"),
+  reservedEndDate: document.querySelector("#reservedEndDate"),
+  reservedSort: document.querySelector("#reservedSort"),
+  reservedDayTypeFilter: document.querySelector("#reservedDayTypeFilter"),
+  reservedSpecialFilter: document.querySelector("#reservedSpecialFilter"),
+  reservedRsvpAvailable: document.querySelector("#reservedRsvpAvailable"),
+  reservedTopMatches: document.querySelector("#reservedTopMatches"),
+  reservedShowSearchOnCalendar: document.querySelector("#reservedShowSearchOnCalendar"),
+  reservedDayFilters: document.querySelectorAll("[name='reservedDayFilter']"),
+  reservedMonthFilters: document.querySelectorAll("[name='reservedMonthFilter']"),
+  reservedSlotFilters: document.querySelectorAll("[name='reservedSlotFilter']"),
+  reservedResultCount: document.querySelector("#reservedResultCount"),
+  reservedDateResults: document.querySelector("#reservedDateResults")
 };
 
 const storageKey = "my-way-planner-oots-v1";
@@ -769,6 +782,16 @@ function setEffectiveStartDate() {
   els.startDate.min = defaultStartDate;
 }
 
+function setEffectiveReservedRange() {
+  if (!els.reservedStartDate || !els.reservedEndDate) return;
+  els.reservedStartDate.value = defaultStartDate;
+  els.reservedStartDate.defaultValue = defaultStartDate;
+  els.reservedStartDate.min = defaultStartDate;
+  els.reservedEndDate.value = defaultEndDate;
+  els.reservedEndDate.defaultValue = defaultEndDate;
+  els.reservedEndDate.min = defaultStartDate;
+}
+
 function renderPlanner() {
   const selectedDate = selectedDateKey ? parseDate(selectedDateKey) : null;
   if (selectedDate && (selectedDate < parseDate(els.startDate.value) || selectedDate > parseDate(els.endDate.value))) {
@@ -928,6 +951,22 @@ function updateDayFilterHints() {
     const isDimmed =
       (dayType === "weekend" && !isWeekendSearchDay && !hasHoliday) ||
       (dayType === "weekday" && (day === 0 || day === 6)) ||
+      (dayType === "saturday-two" && day !== 0);
+    input.parentElement.toggleAttribute("data-muted", isDimmed);
+  });
+}
+
+function updateReservedDayFilterHints() {
+  if (!els.reservedDayTypeFilter) return;
+
+  const dayType = els.reservedDayTypeFilter.value;
+  els.reservedDayFilters.forEach((input) => {
+    const day = Number(input.value);
+    const isWeekendSearchDay = day === 0 || day === 5 || day === 6;
+    const hasHoliday = holidays.some((item) => parseDate(item.date).getDay() === day);
+    const isDimmed =
+      (dayType === "weekend" && !isWeekendSearchDay && !hasHoliday) ||
+      (dayType === "weekday" && (day === 0 || day === 6 || hasHoliday)) ||
       (dayType === "saturday-two" && day !== 0);
     input.parentElement.toggleAttribute("data-muted", isDimmed);
   });
@@ -1321,9 +1360,9 @@ function boatReservedMarkup(item, people) {
   `;
 }
 
-function reservedDayGroups() {
+function reservedDayGroups(reservations = boatReservations) {
   const groups = new Map();
-  for (const reservation of boatReservations) {
+  for (const reservation of reservations) {
     if (!groups.has(reservation.date)) groups.set(reservation.date, []);
     groups.get(reservation.date).push(reservation);
   }
@@ -1351,11 +1390,11 @@ function reservedDayGroupsForReservations(reservations) {
     }));
 }
 
-function reservedProfileBuckets() {
+function reservedProfileBuckets(reservations = boatReservations) {
   const going = [];
   const notRsvped = [];
 
-  for (const reservation of boatReservations) {
+  for (const reservation of reservations) {
     if (selectedProfileIsGoing(reservation)) {
       going.push(reservation);
     } else {
@@ -1382,12 +1421,14 @@ function reservedProfileBucketMarkup(title, reservations, emptyLabel) {
   `;
 }
 
-function reservedDetailListMarkup() {
+function reservedDetailListMarkup(reservations = boatReservations) {
   if (!selectedRsvpProfile()) {
-    return reservedDayGroups().map(reservedDayMarkup).join("");
+    return reservations.length
+      ? reservedDayGroups(reservations).map(reservedDayMarkup).join("")
+      : `<span class="chip chip--clear">No matching reserved slots</span>`;
   }
 
-  const buckets = reservedProfileBuckets();
+  const buckets = reservedProfileBuckets(reservations);
   return [
     reservedProfileBucketMarkup("Going", buckets.going, "This profile is not going on any reserved slots yet"),
     reservedProfileBucketMarkup("Not RSVPed", buckets.notRsvped, "This profile is going on every reserved slot")
@@ -2045,22 +2086,172 @@ function renderCalendar(people, searchResultSlots = new Set()) {
   els.calendar.innerHTML = months.map((month) => monthMarkup(month, people, start, end, searchResultSlots, draftCounts)).join("");
 }
 
+function reservedCandidates() {
+  return boatReservations.map((reservation) => {
+    const date = parseDate(reservation.date);
+    const slot = slots.find((candidate) => candidate.id === reservation.slotId);
+    const conflicts = slot ? conflictsForSlot(date, slot, 1, planner.people) : [];
+    const specials = slot ? specialSlotsForWindow(date, slot, 1) : [];
+    const isWeekend = slot ? isWeekendSlot(date, slot, 1) : false;
+    const isHoliday = holidaysForWindow(date, 1).length > 0;
+    const remaining = remainingCapacityForSlot(reservation);
+    return {
+      reservation,
+      date,
+      slot,
+      conflicts,
+      indicators: slot ? pickIndicators(date, slot, 1) : [],
+      isWeekend,
+      isHoliday,
+      isSaturdayTwo: slot ? isSaturdayTwoSlot(date, slot, 1) : false,
+      specials,
+      remaining,
+      rsvpCount: rsvpCountForSlot(reservation),
+      capacity: slotCapacity(reservation),
+      score: scoreFor(conflicts, planner.people.length),
+      ootCount: uniqueConflicts(conflicts).length
+    };
+  }).filter((item) => item.slot);
+}
+
+function visibleReservedResults() {
+  const filtered = filterReservedCandidates(reservedCandidates());
+  filtered.sort(reservedSortFor(els.reservedSort?.value || "date-early"));
+  const requestedLimit = Number(els.reservedTopMatches?.value || "");
+  const limit = !els.reservedTopMatches || els.reservedTopMatches.value === "" || !Number.isFinite(requestedLimit) || requestedLimit <= 0 ? filtered.length : requestedLimit;
+  const visible = filtered.slice(0, limit);
+  return { filtered, visible };
+}
+
+function filterReservedCandidates(candidates) {
+  const dayType = els.reservedDayTypeFilter?.value || "all";
+  const specialFilter = els.reservedSpecialFilter?.value || "all";
+  const minimumRsvpAvailable = els.reservedRsvpAvailable?.value === "" ? null : Number(els.reservedRsvpAvailable?.value);
+  const start = parseDate(els.reservedStartDate?.value || defaultStartDate);
+  const end = parseDate(els.reservedEndDate?.value || defaultEndDate);
+  const selectedDays = checkedValues(els.reservedDayFilters);
+  const selectedMonths = checkedValues(els.reservedMonthFilters);
+  const selectedSlots = checkedValues(els.reservedSlotFilters);
+
+  return candidates.filter((item) => {
+    if (item.date < start || item.date > end) return false;
+    if (!selectedDays.has(String(item.date.getDay()))) return false;
+    if (!selectedMonths.has(String(item.date.getMonth() + 1))) return false;
+    if (!selectedSlots.has(item.slot.id)) return false;
+    if (dayType === "weekend" && !item.isWeekend && !item.isHoliday) return false;
+    if (dayType === "saturday-two" && !item.isSaturdayTwo) return false;
+    if (dayType === "weekday" && item.isWeekend) return false;
+    if (specialFilter === "with" && !item.specials.length) return false;
+    if (specialFilter === "without" && item.specials.length) return false;
+    if (minimumRsvpAvailable !== null && (!Number.isFinite(minimumRsvpAvailable) || item.remaining === null || item.remaining < minimumRsvpAvailable)) return false;
+    return true;
+  });
+}
+
+function reservedSortFor(sortKey) {
+  const fallback = (a, b) => a.date - b.date || slots.indexOf(a.slot) - slots.indexOf(b.slot);
+  return (a, b) => {
+    switch (sortKey) {
+      case "rsvp-open":
+        return reservedRemainingSortValue(b) - reservedRemainingSortValue(a) || fallback(a, b);
+      case "rsvp-few":
+        return reservedRemainingSortValue(a) - reservedRemainingSortValue(b) || fallback(a, b);
+      case "oot-low":
+        return a.ootCount - b.ootCount || fallback(a, b);
+      case "special-first":
+        return Number(Boolean(b.specials.length)) - Number(Boolean(a.specials.length)) || fallback(a, b);
+      case "weekend-first":
+        return Number(b.isWeekend) - Number(a.isWeekend) || fallback(a, b);
+      case "date-early":
+      default:
+        return fallback(a, b);
+    }
+  };
+}
+
+function reservedRemainingSortValue(item) {
+  return item.remaining === null ? -1 : item.remaining;
+}
+
+function renderReservedSearch(results) {
+  if (!els.reservedResultCount || !els.reservedDateResults) return;
+
+  const { filtered, visible } = results;
+  els.reservedResultCount.textContent = `${visible.length} of ${filtered.length} ${filtered.length === 1 ? "match" : "matches"}`;
+  els.reservedDateResults.innerHTML = visible.length
+    ? visible.map(reservedCandidateMarkup).join("")
+    : `
+      <div class="date-results__empty">
+        <strong>No matching reservations</strong>
+        <span>Loosen the filters or choose more months, days, or slots.</span>
+      </div>
+    `;
+}
+
+function reservedCandidateMarkup(pick) {
+  const conflicts = uniqueConflicts(pick.conflicts);
+  const level = levelFor(pick.conflicts);
+  const className = level === 3 ? "is-bad" : level === 2 ? "is-captain" : level === 1 ? "is-warn" : "";
+  const indicators = [...pick.indicators];
+  if (pick.isSaturdayTwo) {
+    indicators.push({ type: "saturday-two", label: "Sat 2.0", title: "Sunday slot before a holiday" });
+  }
+
+  return `
+    <article class="date-result reserved-date-result ${className}">
+      <div class="date-result__head">
+        <div>
+          <strong class="date-result__date">${dateLabel(pick.date, pick.slot, 1)}</strong>
+          <span class="date-result__slot">${pick.slot.name} &middot; ${pick.slot.timeLabel}</span>
+        </div>
+        <button class="ghost-button date-result__select" type="button" data-reserved-date-jump="${toKey(pick.date)}">View</button>
+      </div>
+      <div class="date-result__meta">
+        <span class="metric">${pick.ootCount} OOT</span>
+        <span class="metric">${slotCapacityLabel(pick.reservation) || "Capacity pending"}</span>
+        <span class="metric">${pick.isWeekend ? "Weekend" : "Weekday"}</span>
+      </div>
+      ${indicatorMarkup(indicators.filter((indicator) => indicator.type !== "weekend"))}
+      ${specialsMarkup(pick.specials)}
+      <span class="date-result__score">${pick.score}/${planner.people.length} available</span>
+      <div class="conflicts">
+        ${conflicts.length ? conflicts.map((item) => `<span class="chip">${escapeHtml(item)}</span>`).join("") : `<span class="chip chip--clear">No conflicts</span>`}
+      </div>
+    </article>
+  `;
+}
+
+function filteredReservationsForDate(reservations, date) {
+  const dateKey = typeof date === "string" ? date : toKey(date);
+  return reservations.filter((item) => item.date === dateKey);
+}
+
+function reservedResultSlotKeys(results) {
+  return new Set(results.map((item) => slotDocumentId(item.reservation.date, item.reservation.slotId)));
+}
+
 function renderReservedOnlyPage() {
-  const start = parseDate(defaultStartDate);
-  const end = parseDate(defaultEndDate);
+  const start = parseDate(els.reservedStartDate?.value || defaultStartDate);
+  const end = parseDate(els.reservedEndDate?.value || defaultEndDate);
   const months = [];
+  const results = visibleReservedResults();
   let cursor = new Date(start.getFullYear(), start.getMonth(), 1);
   while (cursor <= end) {
     months.push(new Date(cursor));
     cursor = new Date(cursor.getFullYear(), cursor.getMonth() + 1, 1);
   }
 
-  renderReservedOnlyDateDetail();
-  els.reservedOnlyCalendar.innerHTML = months.map((month) => reservedOnlyMonthMarkup(month, start, end)).join("");
-  els.reservedOnlyList.innerHTML = reservedDetailListMarkup();
+  updateReservedDayFilterHints();
+  renderReservedSearch(results);
+  renderReservedOnlyDateDetail(results.filtered.map((item) => item.reservation));
+  const calendarMatches = els.reservedShowSearchOnCalendar?.checked ? reservedResultSlotKeys(results.filtered) : new Set();
+  els.reservedOnlyCalendar.innerHTML = months.map((month) => reservedOnlyMonthMarkup(month, start, end, boatReservations, calendarMatches)).join("");
+  if (els.reservedOnlyList) {
+    els.reservedOnlyList.innerHTML = reservedDetailListMarkup(results.filtered.map((item) => item.reservation));
+  }
 }
 
-function reservedOnlyMonthMarkup(month, start, end) {
+function reservedOnlyMonthMarkup(month, start, end, filteredReservations = boatReservations, searchResultSlots = new Set()) {
   const first = new Date(month.getFullYear(), month.getMonth(), 1);
   const last = new Date(month.getFullYear(), month.getMonth() + 1, 0);
   const visibleStart = start > first ? start : first;
@@ -2068,7 +2259,7 @@ function reservedOnlyMonthMarkup(month, start, end) {
   const blanks = Array.from({ length: visibleStart.getDay() }, () => `<div class="day is-outside"></div>`);
   const days = eachDay(toKey(visibleStart), toKey(visibleEnd)).map((date) => {
     const dateKey = toKey(date);
-    const reservations = boatReservationsForDate(dateKey);
+    const reservations = filteredReservationsForDate(filteredReservations, dateKey);
     const holidayNames = reservations.length ? holidaysForWindow(date, 1) : [];
     const specials = specialsForReservations(date, reservations);
     const reservedSlotIds = new Set(reservations.map((item) => item.slotId));
@@ -2084,7 +2275,7 @@ function reservedOnlyMonthMarkup(month, start, end) {
         </span>
         ${reservedDaySpecialIconsMarkup(holidayNames, specials)}
         <span class="slot-list">
-          ${reservedOnlySlotSummaryMarkup(reservations)}
+          ${reservedOnlySlotSummaryMarkup(reservations, searchResultSlots)}
         </span>
       </button>
     `;
@@ -2102,7 +2293,7 @@ function reservedOnlyMonthMarkup(month, start, end) {
   `;
 }
 
-function renderReservedOnlyDateDetail() {
+function renderReservedOnlyDateDetail(filteredReservations = boatReservations) {
   if (!els.reservedOnlyDateDetail) return;
 
   if (!selectedDateKey) {
@@ -2116,7 +2307,7 @@ function renderReservedOnlyDateDetail() {
   }
 
   const date = parseDate(selectedDateKey);
-  const reservations = boatReservationsForDate(selectedDateKey).sort((a, b) => slotOrder(a.slotId) - slotOrder(b.slotId));
+  const reservations = filteredReservationsForDate(filteredReservations, selectedDateKey).sort((a, b) => slotOrder(a.slotId) - slotOrder(b.slotId));
   const holidayNames = reservations.length ? holidaysForWindow(date, 1) : [];
   const specials = specialsForReservations(date, reservations);
 
@@ -2128,7 +2319,7 @@ function renderReservedOnlyDateDetail() {
         ${selectedDateHolidayMarkup(holidayNames)}
         ${climateMarkup(date)}
       </div>
-      <span class="date-detail__count">${reservations.length ? `${reservations.length} ${reservations.length === 1 ? "slot" : "slots"}` : "Not reserved"}</span>
+      <span class="date-detail__count">${reservations.length ? `${reservations.length} ${reservations.length === 1 ? "slot" : "slots"}` : "No match"}</span>
     </div>
     ${specials.length ? `
       <div class="date-detail__specials">
@@ -2138,7 +2329,7 @@ function renderReservedOnlyDateDetail() {
     ` : ""}
     ${reservations.length ? reservedSelectedSlotsMarkup(date, reservations) : `
       <div class="date-detail__summary">
-        <span class="chip chip--clear">No boat reservation for this day</span>
+        <span class="chip chip--clear">No matching boat reservation for this day</span>
       </div>
     `}
   `;
@@ -2219,13 +2410,15 @@ function specialIcon(item) {
   return { type: "special", label: "", title: `${item.title}: ${specialTimeLabel(item)}` };
 }
 
-function reservedOnlySlotSummaryMarkup(reservations) {
+function reservedOnlySlotSummaryMarkup(reservations, searchResultSlots = new Set()) {
   return reservations.map((reservation) => {
     const slot = slots.find((candidate) => candidate.id === reservation.slotId);
     if (!slot) return "";
+    const isSearchResult = searchResultSlots.has(slotDocumentId(reservation.date, reservation.slotId));
+    const title = `${slotName(reservation.slotId)} reserved${isSearchResult ? "; In reserved search results" : ""}`;
 
     return `
-      <span class="slot-pill" data-level="reserved" data-special-slot="false" data-reserved-slot="true" data-other-reserved-slot="false" data-search-result-slot="false" title="${escapeHtml(slotName(reservation.slotId))} reserved">
+      <span class="slot-pill" data-level="reserved" data-special-slot="false" data-reserved-slot="true" data-other-reserved-slot="false" data-search-result-slot="${isSearchResult}" title="${escapeHtml(title)}">
         <span class="slot-pill__text">${escapeHtml(slot.shortName)}</span>
       </span>
     `;
@@ -2522,6 +2715,8 @@ function dayTooltipFor(date, daySlots, peopleCount, specials = []) {
 }
 
 function renderSource() {
+  if (!els.sourceGrid) return;
+
   sortPeople();
   els.sourceGrid.innerHTML = planner.people
     .map(sourceCardMarkup)
@@ -2750,8 +2945,8 @@ async function boot() {
   await loadFirebaseRsvpData();
   setEffectiveStartDate();
 
-  if (els.reservedOnlyCalendar && els.reservedOnlyList) {
-    renderSource();
+  if (els.reservedOnlyCalendar) {
+    setEffectiveReservedRange();
     renderReservedOnlyPage();
     renderProfileSection();
     ensureRsvpDialog();
@@ -2762,10 +2957,32 @@ async function boot() {
       renderReservedOnlyPage();
       els.reservedOnlyDateDetail?.scrollIntoView({ behavior: "smooth", block: "start" });
     });
+    [
+      els.reservedStartDate,
+      els.reservedEndDate,
+      els.reservedSort,
+      els.reservedDayTypeFilter,
+      els.reservedSpecialFilter,
+      els.reservedRsvpAvailable,
+      els.reservedTopMatches,
+      els.reservedShowSearchOnCalendar,
+      ...els.reservedDayFilters,
+      ...els.reservedMonthFilters,
+      ...els.reservedSlotFilters
+    ].filter(Boolean).forEach((el) => {
+      el.addEventListener("input", renderReservedOnlyPage);
+    });
     document.addEventListener("click", (event) => {
       const closeButton = event.target.closest("[data-rsvp-close]");
       if (closeButton) {
         closeRsvpDialog();
+        return;
+      }
+      const reservedJumpButton = event.target.closest("[data-reserved-date-jump]");
+      if (reservedJumpButton) {
+        selectedDateKey = reservedJumpButton.dataset.reservedDateJump;
+        renderReservedOnlyPage();
+        els.reservedOnlyDateDetail?.scrollIntoView({ behavior: "smooth", block: "start" });
         return;
       }
       const removeButton = event.target.closest("[data-rsvp-remove]");
@@ -2805,6 +3022,7 @@ async function boot() {
   }
 
   renderFilters();
+  renderSource();
   els.peopleFilters.addEventListener("change", renderPlanner);
   els.calendar.addEventListener("click", (event) => {
     const day = event.target.closest(".day[data-date]");

@@ -48,26 +48,137 @@
             <div class="calendar" id="reservedOnlyCalendar"></div>
           </section>
 
-          <section class="reserved-detail-section" aria-labelledby="reservedListTitle">
+          <section class="date-search-section reserved-search-section" aria-labelledby="reservedSearchTitle">
             <div class="section-head">
               <div>
-                <p class="eyebrow">Reserved</p>
-                <h2 id="reservedListTitle">Reserved day details</h2>
+                <p class="eyebrow">Reserved Search</p>
+                <h2 id="reservedSearchTitle">Sort and filter reserved slots</h2>
               </div>
+              <span class="result-count" id="reservedResultCount">0 matches</span>
             </div>
-            <div class="reserved-detail-list" id="reservedOnlyList"></div>
+            <div class="date-search-controls" aria-label="Reserved sorting and filters">
+              <div class="field-row">
+                <label for="reservedStartDate">Start</label>
+                <input id="reservedStartDate" type="date" value="2026-05-24">
+              </div>
+              <div class="field-row">
+                <label for="reservedEndDate">End</label>
+                <input id="reservedEndDate" type="date" value="2026-10-18">
+              </div>
+              <div class="field-row">
+                <label for="reservedSort">Sort by</label>
+                <select id="reservedSort">
+                  <option value="date-early" selected>Earliest date</option>
+                  <option value="rsvp-open">Most RSVP spots</option>
+                  <option value="rsvp-few">Fewest RSVP spots</option>
+                  <option value="oot-low">Fewest OOT</option>
+                  <option value="special-first">Special dates first</option>
+                  <option value="weekend-first">Weekend slots first</option>
+                </select>
+              </div>
+              <div class="field-row">
+                <label for="reservedDayTypeFilter">Day type</label>
+                <select id="reservedDayTypeFilter">
+                  <option value="all">Weekend or weekday</option>
+                  <option value="weekend">Weekend slots</option>
+                  <option value="saturday-two">Saturday 2.0</option>
+                  <option value="weekday">Weekday slots</option>
+                </select>
+              </div>
+              <div class="field-row">
+                <label for="reservedSpecialFilter">Special dates</label>
+                <select id="reservedSpecialFilter">
+                  <option value="all">With or without</option>
+                  <option value="with">Specials only</option>
+                  <option value="without">No specials</option>
+                </select>
+              </div>
+              <div class="field-row">
+                <label for="reservedRsvpAvailable">RSVP spots available</label>
+                <input id="reservedRsvpAvailable" type="text" inputmode="numeric" pattern="[0-9]*" placeholder="Any">
+              </div>
+              <div class="field-row">
+                <label for="reservedTopMatches">Top matches</label>
+                <input id="reservedTopMatches" type="text" inputmode="numeric" pattern="[0-9]*" placeholder="All">
+              </div>
+              <label class="toggle">
+                <input id="reservedShowSearchOnCalendar" type="checkbox">
+                <span>Show matches on calendar</span>
+              </label>
+              <fieldset class="toggle-group toggle-group--wide" aria-label="Reserved days of week">
+                <legend>Days</legend>
+                <label>
+                  <input type="checkbox" name="reservedDayFilter" value="0" checked>
+                  <span>Sun</span>
+                </label>
+                <label>
+                  <input type="checkbox" name="reservedDayFilter" value="1" checked>
+                  <span>Mon</span>
+                </label>
+                <label>
+                  <input type="checkbox" name="reservedDayFilter" value="2" checked>
+                  <span>Tue</span>
+                </label>
+                <label>
+                  <input type="checkbox" name="reservedDayFilter" value="3" checked>
+                  <span>Wed</span>
+                </label>
+                <label>
+                  <input type="checkbox" name="reservedDayFilter" value="4" checked>
+                  <span>Thu</span>
+                </label>
+                <label>
+                  <input type="checkbox" name="reservedDayFilter" value="5" checked>
+                  <span>Fri</span>
+                </label>
+                <label>
+                  <input type="checkbox" name="reservedDayFilter" value="6" checked>
+                  <span>Sat</span>
+                </label>
+              </fieldset>
+              <fieldset class="toggle-group toggle-group--wide" aria-label="Reserved months">
+                <legend>Months</legend>
+                <label>
+                  <input type="checkbox" name="reservedMonthFilter" value="5" checked>
+                  <span>May</span>
+                </label>
+                <label>
+                  <input type="checkbox" name="reservedMonthFilter" value="6" checked>
+                  <span>Jun</span>
+                </label>
+                <label>
+                  <input type="checkbox" name="reservedMonthFilter" value="7" checked>
+                  <span>Jul</span>
+                </label>
+                <label>
+                  <input type="checkbox" name="reservedMonthFilter" value="8" checked>
+                  <span>Aug</span>
+                </label>
+                <label>
+                  <input type="checkbox" name="reservedMonthFilter" value="9" checked>
+                  <span>Sep</span>
+                </label>
+                <label>
+                  <input type="checkbox" name="reservedMonthFilter" value="10" checked>
+                  <span>Oct</span>
+                </label>
+              </fieldset>
+              <fieldset class="toggle-group" aria-label="Reserved slots">
+                <legend>Slots</legend>
+                <label>
+                  <input type="checkbox" name="reservedSlotFilter" value="morning" checked>
+                  <span>AM</span>
+                </label>
+                <label>
+                  <input type="checkbox" name="reservedSlotFilter" value="evening" checked>
+                  <span>PM</span>
+                </label>
+              </fieldset>
+            </div>
+            <div class="date-results" id="reservedDateResults"></div>
           </section>
-        </section>
-      </section>
 
-      <section class="source">
-        <div class="section-head">
-          <div>
-            <p class="eyebrow">Organized Source</p>
-            <h2>Out-of-town dates</h2>
-          </div>
-        </div>
-        <div class="source-grid" id="sourceGrid"></div>
+        </section>
       </section>
     </main>
 
