@@ -134,30 +134,33 @@ h3 {
   font-size: 1rem;
 }
 
-.page-link {
-  display: inline-flex;
+.site-nav {
+  display: flex;
+  flex-wrap: wrap;
   align-items: center;
-  justify-content: center;
-  width: fit-content;
-  min-height: 38px;
-  padding: 0 12px;
-  border: 1px solid rgba(255, 255, 255, .44);
+  justify-content: flex-end;
+  gap: 6px;
+  margin-bottom: 12px;
+}
+
+.site-nav a {
+  min-height: 34px;
+  padding: 8px 10px;
   border-radius: 6px;
-  color: #fff;
-  background: rgba(12, 29, 33, .38);
-  font-size: .88rem;
+  color: #35434a;
+  font-size: .86rem;
   font-weight: 850;
   text-decoration: none;
 }
 
-.page-link:hover {
-  background: rgba(12, 29, 33, .56);
+.site-nav a:hover {
+  color: var(--blue);
+  background: rgba(23, 107, 135, .08);
 }
 
-.page-links {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
+.site-nav a[aria-current="page"] {
+  color: #fff;
+  background: var(--blue);
 }
 
 .draft-banner {
@@ -1825,6 +1828,15 @@ button:disabled:hover {
 
   .mast__content {
     padding: 22px;
+  }
+
+  .site-nav {
+    justify-content: stretch;
+  }
+
+  .site-nav a {
+    flex: 1 1 auto;
+    text-align: center;
   }
 
   .controls,
